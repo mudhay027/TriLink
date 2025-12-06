@@ -537,7 +537,15 @@ const Step5Complete = ({ role, navigate }) => {
             </div>
 
             <button
-                onClick={() => alert('Navigate to Dashboard')}
+                onClick={() => {
+                    if (role === 'supplier') {
+                        navigate('/supplier/dashboard');
+                    } else if (role === 'buyer') {
+                        navigate('/buyer/dashboard');
+                    } else {
+                        navigate('/dashboard', { state: { role } });
+                    }
+                }}
                 className="btn btn-primary"
                 style={{ width: '100%', maxWidth: '350px', padding: '1rem' }}
             >

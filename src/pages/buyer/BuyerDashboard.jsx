@@ -19,6 +19,23 @@ const BuyerDashboard = () => {
         { id: 4, name: 'Global Metals', category: 'Multi-Material', rating: 4.3 },
     ];
 
+    const recentOrders = [
+        { id: 'ORD-2025-001', supplier: 'Global Textiles Co.', product: 'Cotton Yarn', amount: '₹1,25,000', status: 'Pending', date: '2025-01-20' },
+        { id: 'ORD-2025-002', supplier: 'MetalWorks Ltd.', product: 'Steel Sheets', amount: '₹4,50,000', status: 'Dispatched', date: '2025-01-18' },
+        { id: 'ORD-2025-003', supplier: 'Alpha Chemicals', product: 'Industrial Solvents', amount: '₹85,000', status: 'Delivered', date: '2025-01-15' },
+    ];
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'Pending': return '#f59e0b';
+            case 'Negotiation': return '#f97316';
+            case 'Accepted': return '#3b82f6';
+            case 'Dispatched': return '#06b6d4';
+            case 'Delivered': return '#10b981';
+            default: return '#64748b';
+        }
+    };
+
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
             {/* Navigation Bar */}
@@ -29,7 +46,7 @@ const BuyerDashboard = () => {
                         <a href="#" style={{ color: 'var(--text-main)' }}>Dashboard</a>
                         <a href="#" onClick={() => navigate('/buyer/search')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Search Products</a>
                         <a href="#" style={{ color: 'var(--text-muted)' }}>My Offers</a>
-                        <a href="#" style={{ color: 'var(--text-muted)' }}>Orders</a>
+                        <a href="#" onClick={() => navigate('/buyer/orders')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Orders</a>
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -77,31 +94,47 @@ const BuyerDashboard = () => {
                     </div>
                 </div>
 
-                {/* Recommended Suppliers */}
+                {/* Recent Orders */}
                 <div>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1.5rem' }}>Recommended Suppliers</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
-                        {suppliers.map((supplier) => (
-                            <div key={supplier.id} className="card" style={{ padding: '1.5rem' }}>
-                                <div style={{ height: '120px', background: '#e2e8f0', borderRadius: '8px', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                    Supplier Logo
-                                </div>
-                                <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{supplier.name}</h4>
-                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>{supplier.category}</p>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginBottom: '1rem' }}>
-                                    {[...Array(5)].map((_, i) => (
-                                        <Star key={i} size={14} fill={i < Math.floor(supplier.rating) ? "black" : "none"} color="black" />
-                                    ))}
-                                    <span style={{ fontSize: '0.85rem', fontWeight: '500', marginLeft: '0.25rem' }}>{supplier.rating}</span>
-                                </div>
-                                <button
-                                    onClick={() => navigate('/buyer/search')}
-                                    style={{ width: '100%', background: 'black', color: 'white', padding: '0.6rem', borderRadius: '6px', fontSize: '0.9rem' }}
-                                >
-                                    View Profile
-                                </button>
-                            </div>
-                        ))}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Recent Orders</h3>
+                        <a href="#" style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>View All</a>
+                    </div>
+                    <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+                            <thead style={{ background: '#f8fafc', color: 'var(--text-muted)', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                <tr>
+                                    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontWeight: '600' }}>Order ID</th>
+                                    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontWeight: '600' }}>Supplier</th>
+                                    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontWeight: '600' }}>Product</th>
+                                    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontWeight: '600' }}>Amount</th>
+                                    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontWeight: '600' }}>Status</th>
+                                    <th style={{ padding: '1rem 1.5rem', textAlign: 'right', fontWeight: '600' }}>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {recentOrders.map((order) => (
+                                    <tr key={order.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                        <td style={{ padding: '1rem 1.5rem', fontWeight: '500' }}>{order.id}</td>
+                                        <td style={{ padding: '1rem 1.5rem' }}>{order.supplier}</td>
+                                        <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{order.product}</td>
+                                        <td style={{ padding: '1rem 1.5rem', fontWeight: '500' }}>{order.amount}</td>
+                                        <td style={{ padding: '1rem 1.5rem' }}>
+                                            <span style={{
+                                                background: `${getStatusColor(order.status)}15`,
+                                                color: getStatusColor(order.status),
+                                                padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '500'
+                                            }}>
+                                                {order.status}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '1rem 1.5rem', textAlign: 'right' }}>
+                                            <button style={{ background: 'white', border: '1px solid var(--border)', padding: '0.4rem 1rem', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer' }}>View Details</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </main>

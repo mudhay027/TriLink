@@ -7,11 +7,15 @@ import Dashboard from './pages/Dashboard';
 import SupplierDashboard from './pages/supplier/SupplierDashboard';
 import MyProducts from './pages/supplier/MyProducts';
 import AddProduct from './pages/supplier/AddProduct';
+import SupplierOrders from './pages/supplier/SupplierOrders';
+import SupplierNegotiation from './pages/negotiation/SupplierNegotiation';
+import OfferSummary from './pages/negotiation/OfferSummary';
 import BuyerDashboard from './pages/buyer/BuyerDashboard';
 import SearchProducts from './pages/buyer/SearchProducts';
 import Negotiation from './pages/buyer/Negotiation';
-import OfferSummary from './pages/buyer/OfferSummary';
+import BuyerOfferSummary from './pages/buyer/OfferSummary';
 import InvoicePreview from './pages/buyer/InvoicePreview';
+import BuyerOrders from './pages/buyer/BuyerOrders';
 
 function App() {
   return (
@@ -26,13 +30,17 @@ function App() {
         <Route path="/supplier/dashboard" element={<SupplierDashboard />} />
         <Route path="/supplier/products" element={<MyProducts />} />
         <Route path="/supplier/add-product" element={<AddProduct />} />
+        <Route path="/supplier/orders" element={<SupplierOrders />} />
+        <Route path="/supplier/negotiation" element={<SupplierNegotiation />} />
+        <Route path="/negotiation/offer-summary" element={<OfferSummary />} />
 
         {/* Buyer Routes */}
         <Route path="/buyer/dashboard" element={<BuyerDashboard />} />
         <Route path="/buyer/search" element={<SearchProducts />} />
         <Route path="/buyer/negotiation" element={<Negotiation />} />
-        <Route path="/buyer/offer-summary" element={<OfferSummary />} />
+        <Route path="/buyer/offer-summary" element={<BuyerOfferSummary />} />
         <Route path="/buyer/invoice-preview" element={<InvoicePreview />} />
+        <Route path="/buyer/orders" element={<BuyerOrders />} />
       </Routes>
     </Router>
   );

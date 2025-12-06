@@ -26,7 +26,7 @@ const SupplierDashboard = () => {
                     <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>
                         <a href="#" style={{ color: 'var(--text-main)' }}>Dashboard</a>
                         <a href="#" onClick={() => navigate('/supplier/products')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Products</a>
-                        <a href="#" style={{ color: 'var(--text-muted)' }}>Orders</a>
+                        <a href="#" onClick={() => navigate('/supplier/orders')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Orders</a>
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -107,7 +107,7 @@ const SupplierDashboard = () => {
                                         <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
                                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                                                 <button style={{ background: 'black', color: 'white', padding: '0.4rem 1rem', borderRadius: '6px', fontSize: '0.85rem' }}>Accept</button>
-                                                <button style={{ background: 'white', border: '1px solid var(--border)', padding: '0.4rem 1rem', borderRadius: '6px', fontSize: '0.85rem' }}>Counter</button>
+
                                             </div>
                                         </td>
                                     </tr>

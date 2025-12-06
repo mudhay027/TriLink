@@ -14,8 +14,17 @@ const Login = () => {
     };
 
     const handleSubmit = () => {
-        // Default to buyer for login demo
-        //navigate('/dashboard', { state: { role: 'buyer' } });
+        // Simple role simulation for demo
+        // In a real app, this would come from the backend response
+        const email = formData.email.toLowerCase();
+        if (email.includes('supplier')) {
+            navigate('/supplier/dashboard');
+        } else if (email.includes('buyer')) {
+            navigate('/buyer/dashboard');
+        } else {
+            // Default fallback
+            navigate('/buyer/dashboard');
+        }
     };
 
     return (

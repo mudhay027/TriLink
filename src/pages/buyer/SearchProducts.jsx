@@ -1,20 +1,136 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, User, Search, Filter, ChevronDown, SlidersHorizontal } from 'lucide-react';
+import { Bell, User, Search, Filter, ChevronDown, SlidersHorizontal, Star, MapPin, X, CheckCircle, ShoppingCart, Info, Truck, ShieldCheck } from 'lucide-react';
 import '../../index.css';
 
 const SearchProducts = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [showModal, setShowModal] = useState(false);
+    const [modalMode, setModalMode] = useState('details'); // 'details' or 'counter'
 
-    const products = [
-        { id: 1, name: 'Stainless Steel 304', supplier: 'MetaWorks Co.', price: '₹50,000/MT', moq: '10 MT', lead: '14 days' },
-        { id: 2, name: 'Aluminum 6061', supplier: 'Global Metals', price: '₹266,000/MT', moq: '5 MT', lead: '10 days' },
-        { id: 3, name: 'Copper Wire C11000', supplier: 'Copper Solutions', price: '₹3,50,000/MT', moq: '2 MT', lead: '7 days' },
-        { id: 4, name: 'HDPE Granules', supplier: 'Plastics Inc.', price: '₹60,000/MT', moq: '20 MT', lead: '21 days' },
-        { id: 5, name: 'Carbon Steel A36', supplier: 'MetalWorks Co.', price: '₹50,000/MT', moq: '50 MT', lead: '14 days' },
-        { id: 6, name: 'Brass Sheets C26000', supplier: 'Copper Solutions', price: '₹550,000/MT', moq: '3 MT', lead: '12 days' },
+    // Filter States
+    const [filters, setFilters] = useState({
+        categories: [],
+        priceMin: '',
+        priceMax: '',
+        qtyMin: '',
+        qtyMax: '',
+        location: '',
+        minRating: 0,
+        verifiedOnly: false
+    });
+
+    // Mock Data
+    const allProducts = [
+        { id: 1, name: 'Stainless Steel 304', category: 'Metals', subCategory: 'Steel', supplier: 'MetaWorks Co.', price: '₹50,000', priceValue: 50000, unit: 'MT', availableQty: 500, location: 'Mumbai, Maharashtra', rating: 4.5, verified: true, description: 'High-grade Stainless Steel 304 sheets, suitable for industrial and construction applications. Corrosion resistant and durable.' },
+        { id: 2, name: 'Aluminum 6061', category: 'Metals', subCategory: 'Aluminum', supplier: 'Global Metals', price: '₹2,66,000', priceValue: 266000, unit: 'MT', availableQty: 200, location: 'Delhi, Delhi', rating: 4.2, verified: true, description: 'Premium Aluminum 6061 alloy, known for its structural strength and toughness. Ideal for aerospace and marine fittings.' },
+        { id: 3, name: 'Copper Wire C11000', category: 'Metals', subCategory: 'Copper', supplier: 'Copper Solutions', price: '₹3,50,000', priceValue: 350000, unit: 'MT', availableQty: 150, location: 'Chennai, Tamil Nadu', rating: 4.8, verified: false, description: 'Electrolytic Tough Pitch (ETP) Copper C11000. Excellent electrical and thermal conductivity.' },
+        { id: 4, name: 'HDPE Granules', category: 'Plastics', subCategory: 'Polymers', supplier: 'Plastics Inc.', price: '₹60,000', priceValue: 60000, unit: 'MT', availableQty: 1000, location: 'Pune, Maharashtra', rating: 4.0, verified: true, description: 'High-Density Polyethylene granules. High strength-to-density ratio, used in plastic bottles and corrosion-resistant piping.' },
+        { id: 5, name: 'Carbon Steel A36', category: 'Metals', subCategory: 'Steel', supplier: 'MetalWorks Co.', price: '₹48,000', priceValue: 48000, unit: 'MT', availableQty: 800, location: 'Mumbai, Maharashtra', rating: 4.6, verified: true, description: 'Standard Carbon Steel A36. Good weldability and machinability, common in structural applications.' },
+        { id: 6, name: 'Brass Sheets C26000', category: 'Metals', subCategory: 'Brass', supplier: 'Copper Solutions', price: '₹5,50,000', priceValue: 550000, unit: 'MT', availableQty: 50, location: 'Chennai, Tamil Nadu', rating: 4.3, verified: true, description: 'Cartridge Brass C26000 sheets. Excellent cold workability, used in ammunition components and plumbing.' },
+        { id: 7, name: 'Industrial Solvent A', category: 'Chemicals', subCategory: 'Solvents', supplier: 'Alpha Chem', price: '₹85,000', priceValue: 85000, unit: 'L', availableQty: 5000, location: 'Ahmedabad, Gujarat', rating: 3.9, verified: false, description: 'Industrial grade solvent for cleaning and degreasing applications. High purity.' },
+        { id: 8, name: 'Cement Grade 53', category: 'Construction', subCategory: 'Cement', supplier: 'BuildRight', price: '₹270', priceValue: 270, unit: 'Bag', availableQty: 10000, location: 'Jaipur, Rajasthan', rating: 4.7, verified: true, description: 'Ordinary Portland Cement (OPC) 53 Grade. High compressive strength, suitable for heavy-duty construction.' },
     ];
+
+    // Filter Logic
+    const filteredProducts = useMemo(() => {
+        return allProducts.filter(product => {
+            // Keyword Search
+            const searchMatch =
+                product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.supplier.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                product.subCategory.toLowerCase().includes(searchTerm.toLowerCase());
+
+            if (!searchMatch) return false;
+
+            // Category Filter
+            if (filters.categories.length > 0 && !filters.categories.includes(product.category)) return false;
+
+            // Price Range
+            if (filters.priceMin && product.priceValue < parseInt(filters.priceMin)) return false;
+            if (filters.priceMax && product.priceValue > parseInt(filters.priceMax)) return false;
+
+            // Quantity Filter
+            if (filters.qtyMin && product.availableQty < parseInt(filters.qtyMin)) return false;
+            if (filters.qtyMax && product.availableQty > parseInt(filters.qtyMax)) return false;
+
+            // Location Filter
+            if (filters.location && !product.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
+
+            // Rating Filter
+            if (product.rating < filters.minRating) return false;
+
+            // Verified Filter
+            if (filters.verifiedOnly && !product.verified) return false;
+
+            return true;
+        });
+    }, [searchTerm, filters, allProducts]);
+
+    // Handlers
+    const handleCategoryChange = (category) => {
+        setFilters(prev => {
+            const newCategories = prev.categories.includes(category)
+                ? prev.categories.filter(c => c !== category)
+                : [...prev.categories, category];
+            return { ...prev, categories: newCategories };
+        });
+    };
+
+    const handleReset = () => {
+        setFilters({
+            categories: [],
+            priceMin: '',
+            priceMax: '',
+            qtyMin: '',
+            qtyMax: '',
+            location: '',
+            minRating: 0,
+            verifiedOnly: false
+        });
+        setSearchTerm('');
+    };
+
+    const removeFilter = (key, value = null) => {
+        if (key === 'categories' && value) {
+            handleCategoryChange(value);
+        } else if (key === 'price') {
+            setFilters(prev => ({ ...prev, priceMin: '', priceMax: '' }));
+        } else if (key === 'qty') {
+            setFilters(prev => ({ ...prev, qtyMin: '', qtyMax: '' }));
+        } else if (key === 'location') {
+            setFilters(prev => ({ ...prev, location: '' }));
+        } else if (key === 'rating') {
+            setFilters(prev => ({ ...prev, minRating: 0 }));
+        } else if (key === 'verified') {
+            setFilters(prev => ({ ...prev, verifiedOnly: false }));
+        }
+    };
+
+    const handleRequestOrder = (product) => {
+        setSelectedProduct(product);
+        setModalMode('details');
+        setShowModal(true);
+    };
+
+    const handleAcceptOffer = () => {
+        // In a real app, this would make an API call
+        alert(`Order created for ${selectedProduct.name}! Status: In Progress – Waiting for Supplier Response.`);
+        setShowModal(false);
+        navigate('/buyer/orders');
+    };
+
+    const handleSendCounter = (e) => {
+        e.preventDefault();
+        // In a real app, this would submit the form data to the backend
+        // and create a new order with status 'Waiting for Supplier Approval'
+        alert(`Counter offer sent for ${selectedProduct.name}! \n\nOrder Status: Waiting for Supplier Approval.\n\nCheck 'My Orders' to track status.`);
+        setShowModal(false);
+        navigate('/buyer/orders');
+    };
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
@@ -26,7 +142,7 @@ const SearchProducts = () => {
                         <a href="#" onClick={() => navigate('/buyer/dashboard')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Dashboard</a>
                         <a href="#" style={{ color: 'var(--text-main)' }}>Search Products</a>
                         <a href="#" style={{ color: 'var(--text-muted)' }}>My Offers</a>
-                        <a href="#" style={{ color: 'var(--text-muted)' }}>Orders</a>
+                        <a href="#" onClick={() => navigate('/buyer/orders')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Orders</a>
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -38,68 +154,146 @@ const SearchProducts = () => {
             </nav>
 
             {/* Search Header */}
-            <div style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1.5rem 3rem' }}>
+            <div style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1.5rem 3rem', position: 'sticky', top: 0, zIndex: 10 }}>
                 <div className="container" style={{ maxWidth: '1200px', display: 'flex', gap: '1rem' }}>
                     <div style={{ flex: 1, position: 'relative' }}>
                         <Search size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                         <input
                             type="text"
-                            placeholder="Search materials, suppliers, specifications..."
+                            placeholder="Search products, materials, suppliers, categories..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{ width: '100%', padding: '0.8rem 1rem 0.8rem 3rem', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '1rem' }}
+                            style={{ width: '100%', padding: '0.8rem 1rem 0.8rem 3rem', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
                         />
                     </div>
                 </div>
             </div>
 
-            <main className="container" style={{ padding: '2rem 1rem', maxWidth: '1200px', display: 'grid', gridTemplateColumns: '260px 1fr', gap: '2rem' }}>
+            <main className="container" style={{ padding: '2rem 1rem', maxWidth: '1200px', display: 'grid', gridTemplateColumns: '280px 1fr', gap: '2rem' }}>
 
                 {/* Sidebar Filters */}
-                <aside>
+                <aside style={{ height: 'fit-content' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Filters</h3>
-                        <button style={{ fontSize: '0.85rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Filter size={18} /> Filters</h3>
+                        <button onClick={handleReset} style={{ fontSize: '0.85rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Reset All</button>
                     </div>
 
-                    <div style={{ marginBottom: '2rem' }}>
-                        <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>Category</h4>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {['Steel (234)', 'Aluminum (189)', 'Copper (156)', 'Plastic (298)'].map((cat, i) => (
-                                <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                                    <input type="checkbox" /> {cat}
+                    {/* Category Filter */}
+                    <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+                        <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '1rem' }}>Category</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {['Metals', 'Plastics', 'Chemicals', 'Construction', 'Agricultural'].map((cat) => (
+                                <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem', color: 'var(--text-main)', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={filters.categories.includes(cat)}
+                                        onChange={() => handleCategoryChange(cat)}
+                                        style={{ accentColor: 'black', width: '16px', height: '16px' }}
+                                    />
+                                    {cat}
                                 </label>
                             ))}
                         </div>
                     </div>
 
-                    <div style={{ marginBottom: '2rem' }}>
-                        <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>Location</h4>
+                    {/* Price Range Filter */}
+                    <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+                        <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '1rem' }}>Price Range (₹)</h4>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <input
+                                type="number"
+                                placeholder="Min"
+                                value={filters.priceMin}
+                                onChange={(e) => setFilters({ ...filters, priceMin: e.target.value })}
+                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem' }}
+                            />
+                            <span style={{ color: 'var(--text-muted)' }}>-</span>
+                            <input
+                                type="number"
+                                placeholder="Max"
+                                value={filters.priceMax}
+                                onChange={(e) => setFilters({ ...filters, priceMax: e.target.value })}
+                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem' }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Quantity Filter */}
+                    <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+                        <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '1rem' }}>Available Quantity</h4>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <input
+                                type="number"
+                                placeholder="Min"
+                                value={filters.qtyMin}
+                                onChange={(e) => setFilters({ ...filters, qtyMin: e.target.value })}
+                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem' }}
+                            />
+                            <span style={{ color: 'var(--text-muted)' }}>-</span>
+                            <input
+                                type="number"
+                                placeholder="Max"
+                                value={filters.qtyMax}
+                                onChange={(e) => setFilters({ ...filters, qtyMax: e.target.value })}
+                                style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem' }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Location Filter */}
+                    <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+                        <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '1rem' }}>Location</h4>
                         <div style={{ position: 'relative' }}>
-                            <select style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid var(--border)', appearance: 'none', fontSize: '0.9rem', cursor: 'pointer' }}>
-                                <option>All Locations</option>
-                                <option>Mumbai</option>
-                                <option>Delhi</option>
-                                <option>Chennai</option>
-                            </select>
-                            <ChevronDown size={16} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }} />
+                            <MapPin size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                            <input
+                                type="text"
+                                placeholder="City or State"
+                                value={filters.location}
+                                onChange={(e) => setFilters({ ...filters, location: e.target.value })}
+                                style={{ width: '100%', padding: '0.6rem 0.6rem 0.6rem 2.2rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem' }}
+                            />
                         </div>
                     </div>
 
-                    <div style={{ marginBottom: '2rem' }}>
-                        <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>Price Range</h4>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <input type="text" placeholder="Min" style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.85rem' }} />
-                            <input type="text" placeholder="Max" style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.85rem' }} />
-                        </div>
-                    </div>
+                    {/* Rating & Verified */}
+                    <div className="card" style={{ padding: '1.5rem' }}>
+                        <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '1rem' }}>Supplier Quality</h4>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem', cursor: 'pointer' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={filters.verifiedOnly}
+                                    onChange={(e) => setFilters({ ...filters, verifiedOnly: e.target.checked })}
+                                    style={{ accentColor: 'black', width: '16px', height: '16px' }}
+                                />
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    Verified Suppliers <CheckCircle size={14} fill="#3b82f6" color="white" />
+                                </span>
+                            </label>
 
-                    <div style={{ marginBottom: '2rem' }}>
-                        <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.75rem' }}>Quantity (MT)</h4>
-                        <input type="range" style={{ width: '100%' }} />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                            <span>0</span>
-                            <span>1000+</span>
+                            <div>
+                                <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Minimum Rating</div>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    {[4, 3, 2, 1].map(rating => (
+                                        <button
+                                            key={rating}
+                                            onClick={() => setFilters({ ...filters, minRating: rating })}
+                                            style={{
+                                                padding: '0.4rem 0.8rem',
+                                                borderRadius: '4px',
+                                                border: filters.minRating === rating ? '1px solid black' : '1px solid var(--border)',
+                                                background: filters.minRating === rating ? 'black' : 'white',
+                                                color: filters.minRating === rating ? 'white' : 'var(--text-main)',
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
+                                                display: 'flex', alignItems: 'center', gap: '0.25rem'
+                                            }}
+                                        >
+                                            {rating}+ <Star size={12} fill={filters.minRating === rating ? "white" : "black"} />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -107,56 +301,228 @@ const SearchProducts = () => {
 
                 {/* Results Grid */}
                 <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Showing 1,247 results</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
-                            Sort by:
-                            <select style={{ border: 'none', background: 'none', fontWeight: '600', cursor: 'pointer' }}>
-                                <option>Relevance</option>
-                                <option>Price: Low to High</option>
-                                <option>Price: High to Low</option>
-                            </select>
+                    {/* Active Filters & Sort */}
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <div style={{ color: 'var(--text-main)', fontWeight: '600' }}>
+                                Showing {filteredProducts.length} results
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+                                Sort by:
+                                <select style={{ border: 'none', background: 'none', fontWeight: '600', cursor: 'pointer' }}>
+                                    <option>Relevance</option>
+                                    <option>Price: Low to High</option>
+                                    <option>Price: High to Low</option>
+                                    <option>Rating: High to Low</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Filter Chips */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            {filters.categories.map(cat => (
+                                <span key={cat} style={{ background: '#e2e8f0', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    {cat} <X size={14} style={{ cursor: 'pointer' }} onClick={() => removeFilter('categories', cat)} />
+                                </span>
+                            ))}
+                            {(filters.priceMin || filters.priceMax) && (
+                                <span style={{ background: '#e2e8f0', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    Price: {filters.priceMin || '0'} - {filters.priceMax || 'Any'} <X size={14} style={{ cursor: 'pointer' }} onClick={() => removeFilter('price')} />
+                                </span>
+                            )}
+                            {(filters.qtyMin || filters.qtyMax) && (
+                                <span style={{ background: '#e2e8f0', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    Qty: {filters.qtyMin || '0'} - {filters.qtyMax || 'Any'} <X size={14} style={{ cursor: 'pointer' }} onClick={() => removeFilter('qty')} />
+                                </span>
+                            )}
+                            {filters.location && (
+                                <span style={{ background: '#e2e8f0', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    Loc: {filters.location} <X size={14} style={{ cursor: 'pointer' }} onClick={() => removeFilter('location')} />
+                                </span>
+                            )}
+                            {filters.verifiedOnly && (
+                                <span style={{ background: '#e2e8f0', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    Verified Only <X size={14} style={{ cursor: 'pointer' }} onClick={() => removeFilter('verified')} />
+                                </span>
+                            )}
                         </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
-                        {products.map((product) => (
-                            <div key={product.id} className="card" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                                <div style={{ height: '160px', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-                                    Material Image
+                    {/* Products Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+                        {filteredProducts.map((product) => (
+                            <div key={product.id} className="card" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', cursor: 'pointer' }}>
+                                <div style={{ height: '180px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', position: 'relative' }}>
+                                    Product Image
+                                    {product.verified && (
+                                        <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                            Verified <CheckCircle size={12} fill="#3b82f6" color="white" />
+                                        </div>
+                                    )}
                                 </div>
                                 <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                    <h4 style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{product.name}</h4>
-                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{product.supplier}</p>
-
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontWeight: '600' }}>{product.price}</span>
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>MOQ: {product.moq}</span>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                                        <div>
+                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{product.category}</span>
+                                            <h4 style={{ fontWeight: '600', fontSize: '1.1rem' }}>{product.name}</h4>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem', fontWeight: '600' }}>
+                                            <Star size={14} fill="black" /> {product.rating}
+                                        </div>
                                     </div>
 
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                        <SlidersHorizontal size={14} /> Lead: {product.lead}
+                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{product.supplier}</p>
+
+                                    <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Price</span>
+                                            <span style={{ fontWeight: '600' }}>{product.price}/{product.unit}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Available</span>
+                                            <span style={{ fontWeight: '600' }}>{product.availableQty} {product.unit}</span>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>
+                                        <MapPin size={14} /> {product.location}
                                     </div>
 
                                     <button
-                                        onClick={() => navigate('/buyer/negotiation')}
-                                        style={{ marginTop: 'auto', width: '100%', background: 'black', color: 'white', padding: '0.75rem', borderRadius: '6px', fontSize: '0.9rem', fontWeight: '500' }}
+                                        onClick={() => handleRequestOrder(product)}
+                                        style={{ marginTop: 'auto', width: '100%', background: 'black', color: 'white', padding: '0.75rem', borderRadius: '6px', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                                     >
-                                        Quick Offer
+                                        <ShoppingCart size={16} /> Request Offer
                                     </button>
                                 </div>
                             </div>
                         ))}
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
-                        <button className="btn btn-outline" style={{ padding: '0.5rem 1rem' }}>Previous</button>
-                        <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', width: '40px' }}>1</button>
-                        <button className="btn btn-outline" style={{ padding: '0.5rem 1rem', width: '40px' }}>2</button>
-                    </div>
+                    {filteredProducts.length === 0 && (
+                        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>
+                            <Search size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                            <h3>No products found</h3>
+                            <p>Try adjusting your filters or search terms.</p>
+                            <button onClick={handleReset} style={{ marginTop: '1rem', color: 'black', textDecoration: 'underline', background: 'none', border: 'none', cursor: 'pointer' }}>Clear all filters</button>
+                        </div>
+                    )}
                 </div>
 
             </main>
+
+            {/* Product Details Modal */}
+            {showModal && selectedProduct && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                    background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div className="fade-in" style={{
+                        background: 'white', width: '90%', maxWidth: '600px', borderRadius: '12px',
+                        padding: '2rem', position: 'relative', maxHeight: '90vh', overflowY: 'auto'
+                    }}>
+                        <button
+                            onClick={() => setShowModal(false)}
+                            style={{ position: 'absolute', right: '1.5rem', top: '1.5rem', background: 'none', border: 'none', cursor: 'pointer' }}
+                        >
+                            <X size={24} color="var(--text-muted)" />
+                        </button>
+
+                        {modalMode === 'details' ? (
+                            <>
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{selectedProduct.category} / {selectedProduct.subCategory}</span>
+                                    <h2 style={{ fontSize: '1.75rem', fontWeight: '700', marginTop: '0.25rem' }}>{selectedProduct.name}</h2>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', fontSize: '0.95rem' }}>
+                                        <span style={{ fontWeight: '600' }}>{selectedProduct.supplier}</span>
+                                        {selectedProduct.verified && <CheckCircle size={16} fill="#3b82f6" color="white" />}
+                                        <span style={{ color: 'var(--text-muted)' }}>•</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                            <Star size={16} fill="black" /> {selectedProduct.rating}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: '2rem' }}>
+                                    <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Description</h3>
+                                    <p style={{ color: 'var(--text-muted)', lineHeight: '1.6' }}>{selectedProduct.description}</p>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '8px' }}>
+                                    <div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Price per Unit</div>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{selectedProduct.price}/{selectedProduct.unit}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Available Quantity</div>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: '600' }}>{selectedProduct.availableQty} {selectedProduct.unit}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Location</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MapPin size={16} /> {selectedProduct.location}</div>
+                                    </div>
+                                    <div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Est. Logistics Cost</div>
+                                        <div style={{ fontSize: '1rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Truck size={16} /> ~₹2,500</div>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <button
+                                        onClick={handleAcceptOffer}
+                                        className="btn btn-primary"
+                                        style={{ flex: 1, padding: '1rem', fontSize: '1rem' }}
+                                    >
+                                        Accept Offer
+                                    </button>
+                                    <button
+                                        onClick={() => setModalMode('counter')}
+                                        className="btn btn-outline"
+                                        style={{ flex: 1, padding: '1rem', fontSize: '1rem' }}
+                                    >
+                                        Counter Offer
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>Propose Counter Offer</h2>
+                                <form onSubmit={handleSendCounter}>
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '0.5rem' }}>Proposed Price (₹)</label>
+                                        <input type="number" defaultValue={selectedProduct.priceValue} style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid var(--border)' }} required />
+                                    </div>
+                                    <div style={{ marginBottom: '1.5rem' }}>
+                                        <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '0.5rem' }}>Quantity</label>
+                                        <input type="number" defaultValue={selectedProduct.availableQty} style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid var(--border)' }} required />
+                                    </div>
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '0.5rem' }}>Required Delivery Date</label>
+                                        <input type="date" style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid var(--border)' }} required />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setModalMode('details')}
+                                            className="btn btn-outline"
+                                            style={{ flex: 1, padding: '1rem' }}
+                                        >
+                                            Back
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary"
+                                            style={{ flex: 1, padding: '1rem' }}
+                                        >
+                                            Send Counter Offer
+                                        </button>
+                                    </div>
+                                </form>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -8,22 +8,50 @@ const Login = () => {
         email: '',
         password: ''
     });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = () => {
-        // Simple role simulation for demo
-        // In a real app, this would come from the backend response
-        const email = formData.email.toLowerCase();
-        if (email.includes('supplier')) {
-            navigate('/supplier/dashboard');
-        } else if (email.includes('buyer')) {
-            navigate('/buyer/dashboard');
-        } else {
-            // Default fallback
-            navigate('/buyer/dashboard');
+    const handleSubmit = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
+            }
+
+            // Store token and redirect
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('role', data.role); // Store role for persistence
+
+            const role = data.role.toLowerCase();
+            if (role === 'supplier') {
+                navigate('/supplier/dashboard');
+            } else if (role === 'buyer') {
+                navigate('/buyer/dashboard');
+            } else if (role === 'logistics') {
+                navigate('/logistics/dashboard');
+            } else {
+                navigate('/buyer/dashboard');
+            }
+        } catch (err) {
+            console.error('Login error:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -122,8 +150,9 @@ const Login = () => {
                             className="btn btn-primary"
                             style={{ width: '100%', padding: '1rem' }}
                         >
-                            Sign in
+                            {loading ? 'Signing in...' : 'Sign in'}
                         </button>
+                        {error && <p style={{ color: 'red', textAlign: 'center', marginTop: '1rem' }}>{error}</p>}
 
                         <p style={{ textAlign: 'center', marginTop: '2rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                             Don't have an account? <span onClick={() => navigate('/')} style={{ color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Register</span>

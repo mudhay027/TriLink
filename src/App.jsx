@@ -16,6 +16,11 @@ import Negotiation from './pages/buyer/Negotiation';
 import BuyerOfferSummary from './pages/buyer/OfferSummary';
 import InvoicePreview from './pages/buyer/InvoicePreview';
 import BuyerOrders from './pages/buyer/BuyerOrders';
+import LogisticsDashboard from './pages/logistics/LogisticsDashboard';
+import AvailableJobs from './pages/logistics/AvailableJobs';
+import RouteSuggestion from './pages/logistics/RouteSuggestion';
+import RouteSummary from './pages/logistics/RouteSummary';
+import LogisticsInvoice from './pages/logistics/LogisticsInvoice';
 
 function App() {
   return (
@@ -41,6 +46,13 @@ function App() {
         <Route path="/buyer/offer-summary" element={<BuyerOfferSummary />} />
         <Route path="/buyer/invoice-preview" element={<InvoicePreview />} />
         <Route path="/buyer/orders" element={<BuyerOrders />} />
+
+        {/* Logistics Routes */}
+        <Route path="/logistics/dashboard" element={<LogisticsDashboard />} />
+        <Route path="/logistics/available-jobs" element={<AvailableJobs />} />
+        <Route path="/logistics/route-suggestion/:id" element={<RouteSuggestion />} />
+        <Route path="/logistics/route-summary" element={<RouteSummary />} />
+        <Route path="/logistics/invoice" element={<LogisticsInvoice />} />
       </Routes>
     </Router>
   );

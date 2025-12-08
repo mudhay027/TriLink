@@ -25,9 +25,12 @@ const Registration = () => {
             panCard: null
         }
     });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        setError('');
     };
 
     const handleFileChange = (docType, file) => {
@@ -40,8 +43,50 @@ const Registration = () => {
         });
     };
 
-    const nextStep = () => setStep(step + 1);
+    const nextStep = () => {
+        if (step === 4) {
+            handleRegister();
+        } else {
+            setStep(step + 1);
+        }
+    };
     const prevStep = () => setStep(step - 1);
+
+    const handleRegister = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: formData.email,
+                    password: formData.password,
+                    role: role, // from location.state
+                    companyName: formData.companyName,
+                    gstNumber: formData.gstNumber,
+                    addressLine1: formData.address,
+                    contactPerson: formData.contactPerson,
+                    contactNumber: formData.contactNumber,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || data.title || 'Registration failed');
+            }
+
+            setStep(5); // Move to completion step on success
+        } catch (err) {
+            console.error('Registration error:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -118,6 +163,8 @@ const Registration = () => {
                                 formData={formData}
                                 onNext={nextStep}
                                 onPrev={prevStep}
+                                error={error}
+                                loading={loading}
                             />
                         )}
                         {step === 5 && (
@@ -420,7 +467,7 @@ const FileUpload = ({ label, subLabel, file, onChange }) => (
 );
 
 // Step 4: Review
-const Step4Review = ({ formData, onNext, onPrev }) => (
+const Step4Review = ({ formData, onNext, onPrev, error, loading }) => (
     <div className="fade-in">
         <h2 style={{ fontSize: '1.75rem', fontWeight: '600', marginBottom: '0.5rem' }}>Review Details</h2>
         <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '0.95rem' }}>
@@ -473,6 +520,8 @@ const Step4Review = ({ formData, onNext, onPrev }) => (
                 Submit & Finish
             </button>
         </div>
+        {error && <div style={{ color: 'red', marginTop: '1rem', textAlign: 'center' }}>{error}</div>}
+        {loading && <div style={{ textAlign: 'center', marginTop: '1rem' }}>Registering...</div>}
     </div>
 );
 
@@ -542,6 +591,8 @@ const Step5Complete = ({ role, navigate }) => {
                         navigate('/supplier/dashboard');
                     } else if (role === 'buyer') {
                         navigate('/buyer/dashboard');
+                    } else if (role === 'logistics') {
+                        navigate('/logistics/dashboard');
                     } else {
                         navigate('/dashboard', { state: { role } });
                     }

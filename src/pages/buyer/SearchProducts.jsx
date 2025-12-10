@@ -147,7 +147,10 @@ const SearchProducts = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     <Bell size={20} color="var(--text-muted)" />
-                    <div style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div
+                        style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        onClick={() => navigate('/buyer/profile')}
+                    >
                         <User size={18} color="var(--text-muted)" />
                     </div>
                 </div>

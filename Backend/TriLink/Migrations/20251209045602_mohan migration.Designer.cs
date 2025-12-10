@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TriLink.Data;
 
@@ -11,9 +12,11 @@ using TriLink.Data;
 namespace TriLink.Migrations
 {
     [DbContext(typeof(TriLinkDBContext))]
-    partial class TriLinkDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251209045602_mohan migration")]
+    partial class mohanmigration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -502,10 +505,6 @@ namespace TriLink.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("ContactPerson")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
                     b.Property<string>("Country")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -518,24 +517,12 @@ namespace TriLink.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
-                    b.Property<string>("GstCertificatePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
                     b.Property<string>("GstNumber")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
-
-                    b.Property<string>("PanCardPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("PanNumber")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

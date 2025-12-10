@@ -6,10 +6,34 @@ import '../../index.css';
 const SupplierDashboard = () => {
     const navigate = useNavigate();
 
+    const [statsData, setStatsData] = React.useState({
+        totalActiveProducts: 0,
+        ongoingOrders: 0,
+        completedOrders: 0
+    });
+
+    React.useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/DashboardStats/supplier', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setStatsData(data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch stats', error);
+            }
+        };
+        fetchStats();
+    }, []);
+
     const stats = [
-        { label: 'Active Listings', value: '48', icon: <Package size={24} />, color: 'var(--text-main)' },
-        { label: 'Offers Received', value: '23', icon: <Handshake size={24} />, color: 'var(--text-main)' },
-        { label: 'Orders', value: '15', icon: <ShoppingBag size={24} />, color: 'var(--text-main)' },
+        { label: 'Total Active Products', value: statsData.totalActiveProducts, icon: <Package size={24} />, color: 'var(--text-main)' },
+        { label: 'Ongoing Products', value: statsData.ongoingOrders, icon: <Handshake size={24} />, color: 'var(--text-main)' }, // Using OngoingOrders as Ongoing Products for now as interpreted
+        { label: 'Completed', value: statsData.completedOrders, icon: <ShoppingBag size={24} />, color: 'var(--text-main)' },
     ];
 
     const offers = [
@@ -27,11 +51,15 @@ const SupplierDashboard = () => {
                         <a href="#" style={{ color: 'var(--text-main)' }}>Dashboard</a>
                         <a href="#" onClick={() => navigate('/supplier/products')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Products</a>
                         <a href="#" onClick={() => navigate('/supplier/orders')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Orders</a>
+                        <a href="#" onClick={() => navigate('/supplier/logistics-job-creation')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Logistics Jobs</a>
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     <Bell size={20} color="var(--text-muted)" />
-                    <div style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div
+                        style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        onClick={() => navigate('/supplier/profile')}
+                    >
                         <User size={18} color="var(--text-muted)" />
                     </div>
                 </div>
@@ -72,7 +100,6 @@ const SupplierDashboard = () => {
                 <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
                     <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Recent Offers</h3>
-                        <a href="#" style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>View All</a>
                     </div>
 
                     <div style={{ overflowX: 'auto' }}>
@@ -83,7 +110,6 @@ const SupplierDashboard = () => {
                                     <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontWeight: '600' }}>Product</th>
                                     <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontWeight: '600' }}>Offered Price</th>
                                     <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontWeight: '600' }}>Quantity</th>
-                                    <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontWeight: '600' }}>Status</th>
                                     <th style={{ padding: '1rem 1.5rem', textAlign: 'right', fontWeight: '600' }}>Actions</th>
                                 </tr>
                             </thead>
@@ -99,14 +125,14 @@ const SupplierDashboard = () => {
                                         <td style={{ padding: '1.25rem 1.5rem' }}>{offer.product}</td>
                                         <td style={{ padding: '1.25rem 1.5rem', fontWeight: '500' }}>{offer.price}</td>
                                         <td style={{ padding: '1.25rem 1.5rem' }}>{offer.quantity}</td>
-                                        <td style={{ padding: '1.25rem 1.5rem' }}>
-                                            <span style={{ background: '#f1f5f9', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '500' }}>
-                                                {offer.status}
-                                            </span>
-                                        </td>
                                         <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
                                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                                <button style={{ background: 'black', color: 'white', padding: '0.4rem 1rem', borderRadius: '6px', fontSize: '0.85rem' }}>Accept</button>
+                                                <button
+                                                    onClick={() => navigate('/supplier/orders', { state: { newOrder: offer } })}
+                                                    style={{ background: 'black', color: 'white', padding: '0.4rem 1rem', borderRadius: '6px', fontSize: '0.85rem' }}
+                                                >
+                                                    Accept
+                                                </button>
 
                                             </div>
                                         </td>

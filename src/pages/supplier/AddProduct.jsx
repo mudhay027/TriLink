@@ -13,11 +13,33 @@ const AddProduct = () => {
         availableQty: '',
         minOrderQty: '',
         leadTime: '',
-        description: ''
+        description: '',
+        images: null,
+        documents: null
     });
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleFileChange = (e, type) => {
+        if (e.target.files && e.target.files[0]) {
+            setFormData({ ...formData, [type]: e.target.files[0] });
+        }
+    };
+
+    const handleSubmit = (status) => {
+        const newProduct = {
+            id: Date.now(),
+            name: formData.productName || 'New Product',
+            category: formData.category || 'Uncategorized',
+            price: formData.price ? `₹${formData.price}/${formData.unit}` : '₹0',
+            quantity: `${formData.availableQty} ${formData.unit}`,
+            leadTime: formData.leadTime ? `${formData.leadTime} days` : 'TBD',
+            status: status,
+            image: formData.images ? URL.createObjectURL(formData.images) : null
+        };
+        navigate('/supplier/products', { state: { newProduct } });
     };
 
     return (
@@ -34,7 +56,10 @@ const AddProduct = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     <Bell size={20} color="var(--text-muted)" />
-                    <div style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div
+                        style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        onClick={() => navigate('/supplier/profile')}
+                    >
                         <User size={18} color="var(--text-muted)" />
                     </div>
                 </div>
@@ -180,7 +205,16 @@ const AddProduct = () => {
                                 </div>
                                 <p style={{ fontWeight: '500', marginBottom: '0.25rem' }}>Upload product images</p>
                                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>PNG, JPG up to 5MB</p>
-                                <button className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>Browse Files</button>
+                                <div style={{ position: 'relative', overflow: 'hidden', display: 'inline-block' }}>
+                                    <button className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', pointerEvents: 'none' }}>Browse Files</button>
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleFileChange(e, 'images')}
+                                        style={{ position: 'absolute', top: 0, left: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                                    />
+                                </div>
+                                {formData.images && <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--accent)' }}>Selected: {formData.images.name}</p>}
                             </div>
                         </div>
 
@@ -197,7 +231,16 @@ const AddProduct = () => {
                                 </div>
                                 <p style={{ fontWeight: '500', marginBottom: '0.25rem' }}>Upload certificates</p>
                                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>PDF up to 10MB</p>
-                                <button className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}>Browse Files</button>
+                                <div style={{ position: 'relative', overflow: 'hidden', display: 'inline-block' }}>
+                                    <button className="btn btn-outline" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', pointerEvents: 'none' }}>Browse Files</button>
+                                    <input
+                                        type="file"
+                                        accept=".pdf"
+                                        onChange={(e) => handleFileChange(e, 'documents')}
+                                        style={{ position: 'absolute', top: 0, left: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                                    />
+                                </div>
+                                {formData.documents && <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--accent)' }}>Selected: {formData.documents.name}</p>}
                             </div>
                         </div>
 
@@ -206,14 +249,14 @@ const AddProduct = () => {
                             <button
                                 className="btn btn-primary"
                                 style={{ padding: '1rem', fontSize: '1rem' }}
-                                onClick={() => navigate('/supplier/products')}
+                                onClick={() => handleSubmit('Active')}
                             >
                                 Save & Publish
                             </button>
                             <button
                                 className="btn btn-outline"
                                 style={{ padding: '1rem', fontSize: '1rem', background: 'white' }}
-                                onClick={() => navigate('/supplier/products')}
+                                onClick={() => handleSubmit('Draft')}
                             >
                                 Save Draft
                             </button>

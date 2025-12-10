@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, FileText, CheckCircle, Clock } from 'lucide-react';
+import { Truck, FileText, CheckCircle, Clock, Bell, User } from 'lucide-react';
 import '../../index.css';
 
 const LogisticsDashboard = () => {
@@ -28,10 +28,19 @@ const LogisticsDashboard = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
                     <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</div>
                     <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>
-                        <a href="#" style={{ color: 'var(--text-main)' }}>Dashboard</a>
-                        <span onClick={() => navigate('/logistics/available-jobs')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Search Products</span>
+                        <a href="#" onClick={() => navigate('/logistics/dashboard')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Dashboard</a>
+                        <span style={{ color: 'var(--text-main)', cursor: 'pointer' }}>Search Jobs</span>
                         <a href="#" style={{ color: 'var(--text-muted)' }}>My Offers</a>
                         <a href="#" style={{ color: 'var(--text-muted)' }}>Orders</a>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <Bell size={20} color="var(--text-muted)" />
+                    <div
+                        style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        onClick={() => navigate('/logistics/profile')}
+                    >
+                        <User size={18} color="var(--text-muted)" />
                     </div>
                 </div>
             </header>

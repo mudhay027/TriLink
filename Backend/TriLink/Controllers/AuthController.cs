@@ -25,11 +25,23 @@ namespace TriLink.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterDto dto)
+        public async Task<IActionResult> Register([FromForm] RegisterDto dto)
         {
             if (await _context.Users.AnyAsync(u => u.Email == dto.Email))
             {
                 return BadRequest("User with this email already exists.");
+            }
+
+            string? gstPath = null;
+            if (dto.GstCertificate != null)
+            {
+                gstPath = await SaveFileAsync(dto.GstCertificate, "gst_certs");
+            }
+
+            string? panPath = null;
+            if (dto.PanCard != null)
+            {
+                panPath = await SaveFileAsync(dto.PanCard, "pan_cards");
             }
 
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
@@ -41,7 +53,11 @@ namespace TriLink.Controllers
                 Role = dto.Role,
                 CompanyName = dto.CompanyName,
                 GstNumber = dto.GstNumber,
+                PanNumber = dto.PanNumber,
+                GstCertificatePath = gstPath,
+                PanCardPath = panPath,
                 AddressLine1 = dto.AddressLine1,
+                ContactPerson = dto.ContactPerson,
                 PhoneNumber = dto.ContactNumber,
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
@@ -51,6 +67,25 @@ namespace TriLink.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "User registered successfully" });
+        }
+
+        private async Task<string> SaveFileAsync(IFormFile file, string folderName)
+        {
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", folderName);
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var uniqueFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(fileStream);
+            }
+
+            return Path.Combine("uploads", folderName, uniqueFileName).Replace("\\", "/");
         }
 
         [HttpPost("login")]
@@ -85,6 +120,7 @@ namespace TriLink.Controllers
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                new Claim(ClaimTypes.Email, user.Email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Role, user.Role)
@@ -94,7 +130,7 @@ namespace TriLink.Controllers
                 issuer: jwtIssuer,
                 audience: jwtAudience,
                 claims: claims,
-                expires: DateTime.Now.AddDays(1), // Token valid for 1 day
+                expires: DateTime.Now.AddDays(5),
                 signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);

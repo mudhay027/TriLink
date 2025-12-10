@@ -17,6 +17,7 @@ const Registration = () => {
         confirmPassword: '',
         companyName: '',
         gstNumber: '',
+        panNumber: '',
         address: '',
         contactPerson: '',
         contactNumber: '',
@@ -56,21 +57,28 @@ const Registration = () => {
         setLoading(true);
         setError('');
         try {
+            const submitData = new FormData();
+            submitData.append('email', formData.email);
+            submitData.append('password', formData.password);
+            submitData.append('role', role);
+            submitData.append('companyName', formData.companyName);
+            submitData.append('gstNumber', formData.gstNumber);
+            submitData.append('panNumber', formData.panNumber);
+            submitData.append('addressLine1', formData.address);
+            submitData.append('contactPerson', formData.contactPerson);
+            submitData.append('contactNumber', formData.contactNumber);
+
+            if (formData.documents.gstCertificate) {
+                submitData.append('gstCertificate', formData.documents.gstCertificate);
+            }
+            if (formData.documents.panCard) {
+                submitData.append('panCard', formData.documents.panCard);
+            }
+
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: formData.email,
-                    password: formData.password,
-                    role: role, // from location.state
-                    companyName: formData.companyName,
-                    gstNumber: formData.gstNumber,
-                    addressLine1: formData.address,
-                    contactPerson: formData.contactPerson,
-                    contactNumber: formData.contactNumber,
-                }),
+                // Content-Type header is not set manually for FormData, browser sets it with boundary
+                body: submitData,
             });
 
             const data = await response.json();
@@ -189,10 +197,6 @@ const ProgressIndicator = ({ currentStep }) => {
         { num: 3, label: 'Review' }
     ];
 
-    // Map global steps (2, 3, 4) to local progress steps (1, 2, 3)
-    // Global Step 2 -> Local 1
-    // Global Step 3 -> Local 2
-    // Global Step 4 -> Local 3
     const activeStep = currentStep - 1;
 
     return (
@@ -326,6 +330,20 @@ const Step2CompanyDetails = ({ formData, handleChange, onNext }) => (
                     onChange={handleChange}
                 />
             </div>
+            {/* Added PAN Number Field */}
+            <div className="input-group">
+                <label className="input-label">PAN Number</label>
+                <input
+                    type="text"
+                    name="panNumber"
+                    placeholder="Enter PAN number"
+                    className="input-field"
+                    value={formData.panNumber}
+                    onChange={handleChange}
+                />
+            </div>
+            {/* Spacer for grid to keep last item left aligned if needed, or just let it flow */}
+            <div></div>
         </div>
 
         <div className="input-group">
@@ -487,6 +505,7 @@ const Step4Review = ({ formData, onNext, onPrev, error, loading }) => (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                 <ReviewItem label="Company Name" value={formData.companyName} />
                 <ReviewItem label="GST Number" value={formData.gstNumber} />
+                <ReviewItem label="PAN Number" value={formData.panNumber} />
                 <ReviewItem label="Contact Person" value={formData.contactPerson} />
                 <ReviewItem label="Contact Number" value={formData.contactNumber} />
                 <ReviewItem label="Email Address" value={formData.email} />

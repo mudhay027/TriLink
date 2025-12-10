@@ -11,13 +11,17 @@ namespace TriLink.DTOs
         public string Password { get; set; } = null!;
 
         [Required]
-        public string Role { get; set; } = null!; // 'Buyer', 'Supplier', 'Logistics'
+        public string Role { get; set; } = null!;
 
         public string? CompanyName { get; set; }
         public string? GstNumber { get; set; }
+        public string? PanNumber { get; set; }
         public string? AddressLine1 { get; set; }
-        public string? ContactPerson { get; set; } // Note: Mapped to existing fields or ignored if not in DB schema (User.cs doesn't have ContactPerson, might need adjustment or map to generic field)
-        public string? ContactNumber { get; set; } // Mapped to PhoneNumber
+        public string? ContactPerson { get; set; } 
+        public string? ContactNumber { get; set; } 
+
+        public IFormFile? GstCertificate { get; set; }
+        public IFormFile? PanCard { get; set; }
     }
 
     public class LoginDto
@@ -27,5 +31,23 @@ namespace TriLink.DTOs
 
         [Required]
         public string Password { get; set; } = null!;
+    }
+
+    public class UserProfileDto
+    {
+        public string? CompanyName { get; set; }
+        public string? AddressLine1 { get; set; }
+        public string? ContactPerson { get; set; }
+        public string? ContactNumber { get; set; } // Phone
+        
+        // Read-only fields
+        public string? Email { get; set; }
+        public string? GstNumber { get; set; }
+        public string? PanNumber { get; set; }
+        public string? Role { get; set; }
+        
+        // Document paths
+        public string? GstCertificatePath { get; set; }
+        public string? PanCardPath { get; set; }
     }
 }

@@ -25,9 +25,7 @@ namespace TriLink.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // ============================
-            // USERS
-            // ============================
+            
             modelBuilder.Entity<User>()
                 .HasKey(u => u.Id);
 

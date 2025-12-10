@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TriLink.Models
 {
@@ -6,12 +7,11 @@ namespace TriLink.Models
     {
         public int Id { get; set; }
 
-        // Link to Order by Id (no FK enforced yet)
-        public int OrderId { get; set; }
+        public int? OrderId { get; set; } // Optional link to an Order
 
         [Required, MaxLength(200)]
         public string PickupAddressLine1 { get; set; } = null!;
-
+        
         [MaxLength(200)]
         public string? PickupAddressLine2 { get; set; }
 
@@ -25,7 +25,7 @@ namespace TriLink.Models
         public string PickupPincode { get; set; } = null!;
 
         [Required, MaxLength(100)]
-        public string PickupCountry { get; set; } = null!;
+        public string PickupCountry { get; set; } = "India";
 
         [Required, MaxLength(200)]
         public string DropAddressLine1 { get; set; } = null!;
@@ -43,17 +43,20 @@ namespace TriLink.Models
         public string DropPincode { get; set; } = null!;
 
         [Required, MaxLength(100)]
-        public string DropCountry { get; set; } = null!;
+        public string DropCountry { get; set; } = "India";
 
-        public decimal? EstimatedWeightKg { get; set; }
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal EstimatedWeightKg { get; set; }
 
-        [Required, MaxLength(30)]
-        public string Status { get; set; } = "Open";
+        [Required, MaxLength(50)]
+        public string Status { get; set; } = "Active"; // Active, Draft, Assigned, Completed
 
-        // Selected quote (if any)
         public int? SelectedQuoteId { get; set; }
 
+        public int CreatedByUserId { get; set; } // To link to the Supplier who created it
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
         public DateTime? UpdatedAt { get; set; }
     }
 }

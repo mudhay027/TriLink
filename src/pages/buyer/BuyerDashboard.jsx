@@ -7,9 +7,9 @@ const BuyerDashboard = () => {
     const navigate = useNavigate();
 
     const stats = [
-        { label: 'My Offers', value: '24', change: '+12%', icon: <Handshake size={24} />, color: 'var(--text-main)' },
-        { label: 'My Orders', value: '15', change: '+8%', icon: <Package size={24} />, color: 'var(--text-main)' },
-        { label: 'Recommended Suppliers', value: '8', change: 'New', icon: <Star size={24} />, color: 'var(--text-main)' },
+        { label: 'Ongoing Orders', value: '24', icon: <Handshake size={24} />, color: 'var(--text-main)' },
+        { label: 'Completed Orders', value: '15', icon: <Package size={24} />, color: 'var(--text-main)' },
+        // { label: 'Recommended Suppliers', value: '8', change: 'New', icon: <Star size={24} />, color: 'var(--text-main)' },
     ];
 
     const suppliers = [
@@ -47,11 +47,15 @@ const BuyerDashboard = () => {
                         <a href="#" onClick={() => navigate('/buyer/search')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Search Products</a>
                         <a href="#" style={{ color: 'var(--text-muted)' }}>My Offers</a>
                         <a href="#" onClick={() => navigate('/buyer/orders')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Orders</a>
+                        <a href="#" onClick={() => navigate('/buyer/logistics-jobs')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Logistics Jobs</a>
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     <Bell size={20} color="var(--text-muted)" />
-                    <div style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div
+                        style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        onClick={() => navigate('/buyer/profile')}
+                    >
                         <User size={18} color="var(--text-muted)" />
                     </div>
                 </div>
@@ -64,7 +68,7 @@ const BuyerDashboard = () => {
                 </div>
 
                 {/* Stats Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
                     {stats.map((stat, index) => (
                         <div key={index} className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '160px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -81,18 +85,7 @@ const BuyerDashboard = () => {
                     ))}
                 </div>
 
-                {/* Quick Filters */}
-                <div style={{ marginBottom: '3rem' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>Quick Filters</h3>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button style={{ background: 'black', color: 'white', padding: '0.5rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '500' }}>All Materials</button>
-                        {['Steel', 'Aluminum', 'Copper', 'Plastic'].map((filter) => (
-                            <button key={filter} style={{ background: 'white', border: '1px solid var(--border)', padding: '0.5rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                                {filter}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+
 
                 {/* Recent Orders */}
                 <div>

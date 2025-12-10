@@ -22,6 +22,15 @@ namespace TriLink.Models
         [MaxLength(50)]
         public string? GstNumber { get; set; }
 
+        [MaxLength(20)]
+        public string? PanNumber { get; set; }
+
+        [MaxLength(500)]
+        public string? GstCertificatePath { get; set; }
+
+        [MaxLength(500)]
+        public string? PanCardPath { get; set; }
+
         [MaxLength(200)]
         public string? AddressLine1 { get; set; }
 
@@ -42,6 +51,10 @@ namespace TriLink.Models
 
         [MaxLength(20)]
         public string? PhoneNumber { get; set; }
+
+        [MaxLength(100)]
+        public string? ContactPerson { get; set; }
+
 
         public bool IsActive { get; set; } = true;
 

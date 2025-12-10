@@ -1,36 +1,83 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Bell, User, Search, Filter, ChevronRight, Clock, CheckCircle, XCircle, AlertCircle, Truck, ArrowRight } from 'lucide-react';
 import '../../index.css';
 
 const SupplierOrders = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [activeTab, setActiveTab] = useState('active');
 
     // Mock Data for Orders
-    const activeOrders = [
-        { id: 'ORD-2024-001', buyer: 'ABC Construction', product: 'Steel Rebar 12mm', quantity: '50 tons', date: '2024-10-25', status: 'Pending Approval', amount: '₹21,00,000' },
-        { id: 'ORD-2024-002', buyer: 'BuildRight Ltd', product: 'Cement Grade 53', quantity: '1000 bags', date: '2024-10-24', status: 'Supplier Accepted', amount: '₹2,70,000' },
+    const [activeOrders, setActiveOrders] = useState([
+        { id: 'ORD-2024-001', buyer: 'ABC Construction', product: 'Steel Rebar 12mm', quantity: '50 tons', date: '2024-10-25', status: 'Payment Pending', amount: '₹21,00,000' },
+        { id: 'ORD-2024-002', buyer: 'BuildRight Ltd', product: 'Cement Grade 53', quantity: '1000 bags', date: '2024-10-24', status: 'Payment Pending', amount: '₹2,70,000' },
         { id: 'ORD-2024-003', buyer: 'Urban Developers', product: 'Red Bricks', quantity: '5000 pcs', date: '2024-10-23', status: 'Awaiting Logistics', amount: '₹40,000' },
-    ];
+    ]);
 
-    const negotiationRequests = [
+    const [orderHistory, setOrderHistory] = useState([
+        { id: 'ORD-2023-089', buyer: 'Metro Builders', product: 'River Sand', quantity: '200 tons', date: '2023-12-15', status: 'Delivered', amount: '₹3,00,000' },
+        { id: 'ORD-2023-076', buyer: 'City Projects', product: 'Cement Grade 43', quantity: '500 bags', date: '2023-11-20', status: 'Cancelled', amount: '₹1,25,000' },
+    ]);
+
+    const requests = [
         { id: 'NEG-2024-001', buyer: 'Skyline Infra', product: 'TMT Bars 16mm', originalOffer: '₹45,000/ton', counterOffer: '₹43,500/ton', quantity: '100 tons', status: 'Negotiation In Progress' },
         { id: 'NEG-2025-002', buyer: 'ABC Corp', product: 'Stainless Steel 304', originalOffer: '₹50,000/MT', counterOffer: '₹48,000/MT', quantity: '100 MT', status: 'Waiting for Approval' },
     ];
 
-    const orderHistory = [
-        { id: 'ORD-2023-089', buyer: 'Metro Builders', product: 'River Sand', quantity: '200 tons', date: '2023-12-15', status: 'Delivered', amount: '₹3,00,000' },
-        { id: 'ORD-2023-076', buyer: 'City Projects', product: 'Cement Grade 43', quantity: '500 bags', date: '2023-11-20', status: 'Cancelled', amount: '₹1,25,000' },
-    ];
+    // Use state for negotiation requests if you want to modify them too, but currently not requested.
+    const [negotiationRequests, setNegotiationRequests] = useState(requests);
+
+    useEffect(() => {
+        if (location.state?.newOrder) {
+            const newOrder = {
+                id: `ORD-2024-${Math.floor(100 + Math.random() * 900)}`,
+                buyer: location.state.newOrder.buyer,
+                product: location.state.newOrder.product,
+                quantity: location.state.newOrder.quantity,
+                date: new Date().toISOString().split('T')[0],
+                status: 'Payment Pending', // Default status for new orders
+                amount: location.state.newOrder.price
+            };
+            setActiveOrders(prev => [newOrder, ...prev]);
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
+
+
+    const handlePaymentReceived = (orderId) => {
+        const orderToMove = activeOrders.find(o => o.id === orderId);
+        if (orderToMove) {
+            // Remove from active
+            setActiveOrders(prev => prev.filter(o => o.id !== orderId));
+            // Add to history with new status
+            setOrderHistory(prev => [{ ...orderToMove, status: 'Order Completed' }, ...prev]);
+            // Optional: alert or switch tab
+            // setActiveTab('history'); 
+        }
+    };
+
+    const handleCancelOrder = (orderId) => {
+        if (confirm('Are you sure you want to cancel this order?')) {
+            const orderToMove = activeOrders.find(o => o.id === orderId);
+            if (orderToMove) {
+                // Remove from active
+                setActiveOrders(prev => prev.filter(o => o.id !== orderId));
+                // Add to history with new status
+                setOrderHistory(prev => [{ ...orderToMove, status: 'Cancelled' }, ...prev]);
+            }
+        }
+    };
 
     const getStatusColor = (status) => {
         switch (status) {
             case 'Pending Approval': return '#f59e0b'; // Amber
             case 'Supplier Accepted': return '#3b82f6'; // Blue
+            case 'Payment Pending': return '#f59e0b'; // Amber/Orange
             case 'Awaiting Logistics': return '#8b5cf6'; // Purple
             case 'Scheduled for Dispatch': return '#06b6d4'; // Cyan
             case 'Delivered': return '#10b981'; // Green
+            case 'Order Completed': return '#10b981'; // Green
             case 'Cancelled': return '#ef4444'; // Red
             case 'Negotiation In Progress': return '#f97316'; // Orange
             case 'Declined': return '#ef4444'; // Red
@@ -49,11 +96,15 @@ const SupplierOrders = () => {
                         <a href="#" onClick={() => navigate('/supplier/dashboard')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Dashboard</a>
                         <a href="#" onClick={() => navigate('/supplier/products')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Products</a>
                         <a href="#" style={{ color: 'var(--text-main)', cursor: 'default' }}>Orders</a>
+                        <a href="#" onClick={() => navigate('/supplier/logistics-job-creation')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Logistics Jobs</a>
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                     <Bell size={20} color="var(--text-muted)" />
-                    <div style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div
+                        style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        onClick={() => navigate('/supplier/profile')}
+                    >
                         <User size={18} color="var(--text-muted)" />
                     </div>
                 </div>
@@ -92,41 +143,62 @@ const SupplierOrders = () => {
                 {/* Content */}
                 {activeTab === 'active' && (
                     <div className="fade-in">
-                        {activeOrders.map((order) => (
-                            <div key={order.id} className="card" style={{ padding: '1.5rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontWeight: '600', fontSize: '1.1rem' }}>{order.buyer}</span>
-                                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', background: '#f1f5f9', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>{order.id}</span>
+                        {activeOrders.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No active orders.</div>
+                        ) : (
+                            activeOrders.map((order) => (
+                                <div key={order.id} className="card" style={{ padding: '1.5rem', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                                            <span style={{ fontWeight: '600', fontSize: '1.1rem' }}>{order.buyer}</span>
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', background: '#f1f5f9', padding: '0.2rem 0.6rem', borderRadius: '4px' }}>{order.id}</span>
+                                        </div>
+                                        <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '0.25rem' }}>
+                                            {order.product} • {order.quantity}
+                                        </div>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                                            Amount: <span style={{ color: 'black', fontWeight: '500' }}>{order.amount}</span>
+                                        </div>
                                     </div>
-                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '0.25rem' }}>
-                                        {order.product} • {order.quantity}
-                                    </div>
-                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                                        Amount: <span style={{ color: 'black', fontWeight: '500' }}>{order.amount}</span>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ marginBottom: '0.5rem' }}>
+                                            <span style={{
+                                                background: `${getStatusColor(order.status)}15`,
+                                                color: getStatusColor(order.status),
+                                                padding: '0.3rem 0.8rem',
+                                                borderRadius: '20px',
+                                                fontSize: '0.85rem',
+                                                fontWeight: '600',
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: '0.4rem'
+                                            }}>
+                                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: getStatusColor(order.status) }}></div>
+                                                {order.status}
+                                            </span>
+                                        </div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>Expected: {order.date}</div>
+
+                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                            <button
+                                                onClick={() => handleCancelOrder(order.id)}
+                                                className="btn"
+                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', color: '#ef4444', border: '1px solid #fee2e2', background: '#fef2f2' }}
+                                            >
+                                                Cancel Order
+                                            </button>
+                                            <button
+                                                onClick={() => handlePaymentReceived(order.id)}
+                                                className="btn btn-primary"
+                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                                            >
+                                                Payment Received
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={{ marginBottom: '0.5rem' }}>
-                                        <span style={{
-                                            background: `${getStatusColor(order.status)}15`,
-                                            color: getStatusColor(order.status),
-                                            padding: '0.3rem 0.8rem',
-                                            borderRadius: '20px',
-                                            fontSize: '0.85rem',
-                                            fontWeight: '600',
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            gap: '0.4rem'
-                                        }}>
-                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: getStatusColor(order.status) }}></div>
-                                            {order.status}
-                                        </span>
-                                    </div>
-                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Expected: {order.date}</div>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 )}
 

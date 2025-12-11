@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TriLink.Data;
 
@@ -11,9 +12,11 @@ using TriLink.Data;
 namespace TriLink.Migrations
 {
     [DbContext(typeof(TriLinkDBContext))]
-    partial class TriLinkDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251211134248_mohan")]
+    partial class mohan
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

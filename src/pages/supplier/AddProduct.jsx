@@ -28,18 +28,51 @@ const AddProduct = () => {
         }
     };
 
-    const handleSubmit = (status) => {
-        const newProduct = {
-            id: Date.now(),
-            name: formData.productName || 'New Product',
-            category: formData.category || 'Uncategorized',
-            price: formData.price ? `₹${formData.price}/${formData.unit}` : '₹0',
-            quantity: `${formData.availableQty} ${formData.unit}`,
-            leadTime: formData.leadTime ? `${formData.leadTime} days` : 'TBD',
-            status: status,
-            image: formData.images ? URL.createObjectURL(formData.images) : null
-        };
-        navigate('/supplier/products', { state: { newProduct } });
+    const handleSubmit = async (status) => {
+        const data = new FormData();
+        data.append('name', formData.productName);
+        data.append('category', formData.category);
+        data.append('unit', formData.unit);
+        data.append('price', formData.price);
+        data.append('availableQty', formData.availableQty);
+        data.append('minOrderQty', formData.minOrderQty);
+        data.append('leadTime', formData.leadTime);
+        if (formData.description) data.append('description', formData.description);
+        data.append('status', status);
+
+        if (formData.images) {
+            data.append('image', formData.images);
+        }
+        if (formData.documents) {
+            data.append('document', formData.documents);
+        }
+
+        try {
+            const response = await fetch('/api/products', {
+                method: 'POST',
+                body: data
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                // Create a mock product object to pass to the next page for immediate feedback if needed, 
+                // or just navigate and let the next page fetch from DB.
+                // For better UX, let's pass a basic object or simply trigger a refetch on the list page.
+                const newProduct = {
+                    id: result.productId,
+                    name: formData.productName,
+                    status: status
+                };
+                navigate('/supplier/products', { state: { newProduct } });
+            } else {
+                console.error("Failed to save product");
+                const errorData = await response.json();
+                alert('Failed to save product: ' + JSON.stringify(errorData));
+            }
+        } catch (error) {
+            console.error("Error submitting form:", error);
+            alert('An error occurred while saving the product.');
+        }
     };
 
     return (

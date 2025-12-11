@@ -1,37 +1,46 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace TriLink.Models
 {
     public class Product
     {
+        [Key]
         public int Id { get; set; }
 
-        // FK -> User (Supplier)
-        public int SupplierId { get; set; }
+        [Required]
+        [MaxLength(200)]
+        public string Name { get; set; } = string.Empty;
 
-        [Required, MaxLength(200)]
-        public string Name { get; set; } = null!;
+        [Required]
+        [MaxLength(100)]
+        public string Category { get; set; } = string.Empty;
 
+        [Required]
+        [MaxLength(20)]
+        public string Unit { get; set; } = string.Empty;
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal Price { get; set; }
+
+        public int AvailableQty { get; set; }
+
+        public int MinOrderQty { get; set; }
+
+        public int LeadTime { get; set; }
+
+        [MaxLength(2000)]
         public string? Description { get; set; }
 
-        [MaxLength(100)]
-        public string? Category { get; set; }
-
-        [Required, MaxLength(50)]
-        public string Unit { get; set; } = null!;   // kg, ton, litre...
-
-        public decimal AvailableQuantity { get; set; }
-
-        public decimal BasePricePerUnit { get; set; }
-
-        public decimal? MinOrderQuantity { get; set; }
-
-        public int? LeadTimeDays { get; set; }
+        [MaxLength(500)]
+        public string? ImagePath { get; set; }
 
         [MaxLength(500)]
-        public string? ImageUrl { get; set; }       // blob URL
+        public string? DocumentPath { get; set; }
 
-        public bool IsActive { get; set; } = true;
+        [Required]
+        [MaxLength(20)]
+        public string Status { get; set; } = "Draft"; // Active, Draft
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

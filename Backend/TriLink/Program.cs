@@ -23,6 +23,10 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<TriLink.Services.IRouteService, TriLink.Services.RouteService>();
+builder.Services.AddScoped<TriLink.Services.IAIService, TriLink.Services.AIService>();
+
 #region Database Configuration
 builder.Services.AddDbContext<TriLinkDBContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

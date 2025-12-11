@@ -80,8 +80,7 @@ const AssignedJobs = () => {
                             <tr>
                                 <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Job ID</th>
                                 <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Route</th>
-                                <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Driver Exp.</th>
-                                <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Vehicle Type</th>
+
                                 <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Status</th>
                                 <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Pickup Date</th>
                                 <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Route</th>
@@ -95,8 +94,7 @@ const AssignedJobs = () => {
                                     <td style={{ padding: '1rem 1.5rem' }}>
                                         {job.origin} → {job.destination}
                                     </td>
-                                    <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{job.experience}</td>
-                                    <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{job.vehicle}</td>
+
                                     <td style={{ padding: '1rem 1.5rem' }}>
                                         <span style={{
                                             padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '500',

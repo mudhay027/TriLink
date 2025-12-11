@@ -6,6 +6,27 @@ import '../../index.css';
 const RouteSummary = () => {
     const navigate = useNavigate();
 
+    const handleAccept = () => {
+        const newJob = {
+            id: 'JOB-' + Math.floor(Math.random() * 10000), // Generate a random ID for now
+            origin: 'Coimbatore',
+            destination: 'Delhi',
+            distance: '2122 km',
+            eta: '32 hours',
+            fuelCost: '₹50432',
+            driverExp: '5+ Years',
+            vehicleType: 'Heavy Truck',
+            status: 'Accepted',
+            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        };
+
+        const existingHistory = JSON.parse(localStorage.getItem('jobHistory') || '[]');
+        const updatedHistory = [newJob, ...existingHistory];
+        localStorage.setItem('jobHistory', JSON.stringify(updatedHistory));
+
+        navigate('/logistics/dashboard');
+    };
+
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
             {/* Header */}
@@ -13,10 +34,9 @@ const RouteSummary = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
                     <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)', cursor: 'pointer' }} onClick={() => navigate('/logistics/dashboard')}>TriLink</div>
                     <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>
-                        <a href="#" style={{ color: 'var(--text-main)' }}>Dashboard</a>
-                        <a href="#" style={{ color: 'var(--text-muted)' }}>Search Products</a>
-                        <a href="#" style={{ color: 'var(--text-muted)' }}>My Offers</a>
-                        <a href="#" style={{ color: 'var(--text-muted)' }}>Orders</a>
+                        <a href="#" onClick={() => navigate('/logistics/dashboard')} style={{ color: 'var(--text-main)', cursor: 'pointer' }}>Dashboard</a>
+                        <span onClick={() => navigate('/logistics/available-jobs')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Search Jobs</span>
+                        <span onClick={() => navigate('/logistics/assigned-jobs')} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Assigned Jobs</span>
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
@@ -48,6 +68,8 @@ const RouteSummary = () => {
                             <StatBar icon={<Map size={20} />} label="Distance" value="2122 km" />
                             <StatBar icon={<Clock size={20} />} label="ETA" value="32 hours" />
                             <StatBar icon={<Truck size={20} />} label="Fuel Cost" value="₹50432" />
+                            <StatBar icon={<User size={20} />} label="Driver Exp." value="5+ Years" />
+                            <StatBar icon={<Truck size={20} />} label="Vehicle Type" value="Heavy Truck" />
                         </div>
 
                         {/* Waypoints */}
@@ -73,11 +95,11 @@ const RouteSummary = () => {
                         </div>
 
                         <button
-                            onClick={() => navigate('/logistics/invoice')}
+                            onClick={handleAccept}
                             className="btn btn-primary"
                             style={{ width: '100%', padding: '1rem' }}
                         >
-                            Generate Invoice
+                            Accept
                         </button>
                     </div>
 

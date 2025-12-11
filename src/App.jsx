@@ -22,6 +22,7 @@ import BuyerOrders from './pages/buyer/BuyerOrders';
 import BuyerLogisticsJobCreation from './pages/buyer/BuyerLogisticsJobCreation';
 import LogisticsDashboard from './pages/logistics/LogisticsDashboard';
 import AvailableJobs from './pages/logistics/AvailableJobs';
+import AssignedJobs from './pages/logistics/AssignedJobs';
 import RouteSuggestion from './pages/logistics/RouteSuggestion';
 import RouteSummary from './pages/logistics/RouteSummary';
 import LogisticsInvoice from './pages/logistics/LogisticsInvoice';
@@ -61,6 +62,7 @@ function App() {
         {/* Logistics Routes */}
         <Route path="/logistics/dashboard" element={<LogisticsDashboard />} />
         <Route path="/logistics/available-jobs" element={<AvailableJobs />} />
+        <Route path="/logistics/assigned-jobs" element={<AssignedJobs />} />
         <Route path="/logistics/route-suggestion/:id" element={<RouteSuggestion />} />
         <Route path="/logistics/route-summary" element={<RouteSummary />} />
         <Route path="/logistics/invoice" element={<LogisticsInvoice />} />

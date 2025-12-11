@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { MapPin, Clock, Truck, Zap, Map } from 'lucide-react';
+import { Bell, User, MapPin, Clock, Truck, Zap, Map, CheckCircle } from 'lucide-react';
 import '../../index.css';
 
 const RouteSuggestion = () => {
@@ -8,6 +8,54 @@ const RouteSuggestion = () => {
     const navigate = useNavigate();
     const [showComparison, setShowComparison] = useState(false);
     const [selectedRoute, setSelectedRoute] = useState(null);
+    const [jobData, setJobData] = useState(null);
+
+    // Mock Database
+    const mockJobsDatabase = {
+        'JOB-001': {
+            id: 'JOB-001',
+            referenceId: 'JOB-2025-001',
+            origin: 'Chennai',
+            destination: 'Delhi',
+            pickupLocation: '123 Industrial Park, Zone A, Chennai',
+            deliveryLocation: '456 Central Delhi, Delhi',
+            scheduledTime: 'Jan 25, 2025 - 10:00 AM',
+            driver: 'Parthiban',
+            status: 'Pending'
+        },
+        'JOB-002': {
+            id: 'JOB-002',
+            referenceId: 'JOB-2025-002',
+            origin: 'Delhi',
+            destination: 'Hossur',
+            pickupLocation: '789 Logistics Hub, Delhi',
+            deliveryLocation: '101 Manufacturing Unit, Hossur',
+            scheduledTime: 'Jan 22, 2025 - 08:30 AM',
+            driver: 'Rajesh Kumar',
+            status: 'In Transit'
+        }
+    };
+
+    useEffect(() => {
+        // Fetch job data based on ID
+        const data = mockJobsDatabase[id];
+        if (data) {
+            setJobData(data);
+        } else {
+            // Fallback or handle not found
+            setJobData({
+                id: id,
+                referenceId: `JOB-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`,
+                origin: 'Unknown',
+                destination: 'Unknown',
+                pickupLocation: 'N/A',
+                deliveryLocation: 'N/A',
+                scheduledTime: 'N/A',
+                driver: 'Unassigned',
+                status: 'Unknown'
+            });
+        }
+    }, [id]);
 
     const handleSuggest = () => {
         // Simulate API call delay
@@ -21,6 +69,8 @@ const RouteSuggestion = () => {
             navigate('/logistics/route-summary');
         }
     };
+
+    if (!jobData) return <div className="fade-in" style={{ padding: '2rem' }}>Loading...</div>;
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
@@ -45,32 +95,32 @@ const RouteSuggestion = () => {
 
                 {/* Job Details Card */}
                 <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
+                    <div style={{ width: '100%' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-                            <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Delivery to Delhi Warehouse</h2>
-                            <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', background: '#f1f5f9', borderRadius: '4px', fontWeight: '500' }}>In Progress</span>
+                            <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Delivery to {jobData.destination} Warehouse</h2>
+                            <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem', background: '#f1f5f9', borderRadius: '4px', fontWeight: '500' }}>{jobData.status}</span>
                         </div>
-                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>JOB-2025-0342</div>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>{jobData.referenceId}</div>
 
                         <div style={{ display: 'flex', gap: '3rem', marginTop: '1.5rem' }}>
                             <div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Pickup Location</div>
-                                <div style={{ fontWeight: '500' }}>123 Industrial Park, Zone A, Coimbatore</div>
+                                <div style={{ fontWeight: '500' }}>{jobData.pickupLocation}</div>
                             </div>
                             <div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Delivery Location</div>
-                                <div style={{ fontWeight: '500' }}>456 Central Delhi, Maharastra</div>
+                                <div style={{ fontWeight: '500' }}>{jobData.deliveryLocation}</div>
                             </div>
                         </div>
 
                         <div style={{ display: 'flex', gap: '3rem', marginTop: '1rem' }}>
                             <div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Scheduled Time</div>
-                                <div style={{ fontWeight: '500' }}>Jan 15, 2025 - 2:00 PM</div>
+                                <div style={{ fontWeight: '500' }}>{jobData.scheduledTime}</div>
                             </div>
                             <div>
                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Driver Assigned</div>
-                                <div style={{ fontWeight: '500' }}>Parthiban</div>
+                                <div style={{ fontWeight: '500' }}>{jobData.driver}</div>
                             </div>
                         </div>
                     </div>
@@ -83,12 +133,12 @@ const RouteSuggestion = () => {
                             {showComparison ? 'Compare Routes' : 'Route Planning'}
                         </h3>
                         {!showComparison && (
-                            <button onClick={handleSuggest} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <button onClick={handleSuggest} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#0f172a', color: 'white' }}>
                                 <Zap size={16} /> Suggest Route
                             </button>
                         )}
                         {showComparison && (
-                            <button onClick={() => setShowComparison(false)} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
+                            <button onClick={() => setShowComparison(false)} className="btn" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', border: '1px solid var(--border)' }}>
                                 Generate New Routes
                             </button>
                         )}
@@ -165,10 +215,10 @@ const RouteSuggestion = () => {
                         </div>
 
                         <div style={{ display: 'flex', gap: '1rem' }}>
-                            <button onClick={handleConfirm} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <button onClick={handleConfirm} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#0f172a', color: 'white' }}>
                                 <CheckCircle size={16} /> Confirm & Assign Route
                             </button>
-                            <button onClick={() => setSelectedRoute(null)} className="btn btn-outline">Cancel</button>
+                            <button onClick={() => setSelectedRoute(null)} className="btn" style={{ border: '1px solid var(--border)' }}>Cancel</button>
                         </div>
                     </div>
                 )}
@@ -176,9 +226,6 @@ const RouteSuggestion = () => {
         </div>
     );
 };
-
-// Sub-components
-import { Bell, User, CheckCircle } from 'lucide-react';
 
 const StatPlaceholder = ({ label, icon }) => (
     <div style={{ background: '#f9fafb', padding: '1rem', borderRadius: '8px' }}>
@@ -222,36 +269,33 @@ const RouteCard = ({ title, tag, tagColor, selected, onClick, stats, details }) 
             <span style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '0.5rem' }}>Route Preview</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.9rem' }}>
-            <div style={{ display: 'flex', justifySelf: 'start', flexDirection: 'column' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', fontSize: '0.9rem', marginBottom: '0.75rem' }}>
+            <div>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Distance</span>
-                <span style={{ fontWeight: '500' }}>{stats.distance}</span>
+                <div style={{ fontWeight: '500' }}>{stats.distance}</div>
             </div>
-            <div style={{ display: 'flex', justifySelf: 'end', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Distance</span>
-                <span style={{ fontWeight: '500' }}>{stats.distance}</span> {/* Typo in wireframe? Keeping consistent */}
-            </div>
-            <div style={{ display: 'flex', justifySelf: 'start', flexDirection: 'column' }}>
+            <div>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Est. Time</span>
-                <span style={{ fontWeight: '500' }}>{stats.time}</span>
+                <div style={{ fontWeight: '500' }}>{stats.time}</div>
             </div>
-            <div style={{ display: 'flex', justifySelf: 'end', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Est. Time</span>
-                <span style={{ fontWeight: '500' }}>{stats.time}</span>
-            </div>
-            <div style={{ display: 'flex', justifySelf: 'start', flexDirection: 'column' }}>
+            <div>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Fuel Cost</span>
-                <span style={{ fontWeight: '500' }}>{stats.cost}</span>
+                <div style={{ fontWeight: '500' }}>{stats.cost}</div>
             </div>
-            <div style={{ display: 'flex', justifySelf: 'end', flexDirection: 'column', alignItems: 'flex-end' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Fuel Cost</span>
-                <span style={{ fontWeight: '500' }}>{stats.cost}</span>
-            </div>
+        </div>
 
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.9rem' }}>
+            <div>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Driver Experience</span>
+                <div style={{ fontWeight: '500' }}>{stats.experience}</div>
+            </div>
+            <div>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Vehicle Type</span>
+                <div style={{ fontWeight: '500' }}>{stats.vehicle}</div>
+            </div>
         </div>
 
         <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)', fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ width: '14px', height: '14px', background: '#94a3b8', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '10px' }}>i</div>
             {details}
         </div>
     </div>

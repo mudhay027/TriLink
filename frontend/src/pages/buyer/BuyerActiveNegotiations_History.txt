@@ -1,0 +1,64 @@
+                {/* Order History Tab */}
+                {activeTab === 'history' && (
+                    <div className="fade-in">
+                        {rejectedNegotiations.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No cancelled negotiations in history.</div>
+                        ) : (
+                            rejectedNegotiations.map((req) => (
+                                <div key={req.id} className="card" style={{ padding: '1.5rem', marginBottom: '1rem', borderLeft: '4px solid #94a3b8' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                        <div>
+                                            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.25rem' }}>{req.seller}</h3>
+                                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>{req.product}</p>
+                                        </div>
+                                        <span style={{ color: '#64748b', fontWeight: '500', fontSize: '0.9rem', background: '#f1f5f9', padding: '0.3rem 0.8rem', borderRadius: '6px', height: 'fit-content' }}>
+                                            {req.status}
+                                        </span>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '1.5rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '8px' }}>
+                                        {/* Product Image */}
+                                        <div style={{ flexShrink: 0 }}>
+                                            <img 
+                                                src={`http://localhost:5081${req.productImage}`}
+                                                alt={req.product}
+                                                style={{ 
+                                                    width: '120px', 
+                                                    height: '120px', 
+                                                    objectFit: 'cover', 
+                                                    borderRadius: '8px',
+                                                    border: '2px solid #e2e8f0'
+                                                }}
+                                                onError={(e) => {
+                                                    e.target.src = 'https://via.placeholder.com/120?text=No+Image';
+                                                }}
+                                            />
+                                        </div>
+                                        
+                                        {/* Details Grid */}
+                                        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Original Price</div>
+                                                <div style={{ fontWeight: '500', textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.95rem' }}>{req.originalOffer}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Your Counter Offer</div>
+                                                <div style={{ fontWeight: '600', color: '#94a3b8', fontSize: '1.1rem' }}>{req.counterOffer}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Quantity</div>
+                                                <div style={{ fontWeight: '500', fontSize: '0.95rem' }}>{req.quantity}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+            </main>
+        </div>
+    );
+};
+
+export default BuyerActiveNegotiations;

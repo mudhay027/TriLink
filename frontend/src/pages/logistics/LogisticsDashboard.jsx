@@ -1,0 +1,165 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Truck, FileText, CheckCircle, Clock, Bell, User } from 'lucide-react';
+import '../../index.css';
+
+const LogisticsDashboard = () => {
+    const navigate = useNavigate();
+    const [selectedJob, setSelectedJob] = useState('JOB-001');
+    const [jobHistory, setJobHistory] = useState([]);
+
+    // Stats
+    // Hardcoded for now as per design, should not change when quoting
+    const [availableJobsCount, setAvailableJobsCount] = useState(0);
+    const [assignedJobsCount, setAssignedJobsCount] = useState(0);
+    const [quotesSubmittedCount, setQuotesSubmittedCount] = useState(0);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const headers = { 'Authorization': `Bearer ${token}` };
+
+                // Fetch Available Jobs
+                const availableRes = await fetch('http://localhost:5081/api/BuyerLogisticsJob/available', { headers });
+                if (availableRes.ok) {
+                    const data = await availableRes.json();
+                    setAvailableJobsCount(data.length);
+                }
+
+                // Fetch Assigned Jobs
+                const assignedRes = await fetch('http://localhost:5081/api/BuyerLogisticsJob/assigned', { headers });
+                if (assignedRes.ok) {
+                    const data = await assignedRes.json();
+                    setAssignedJobsCount(data.length);
+                }
+
+                // Fetch Quotes Submitted (only Pending quotes, not Accepted/Rejected)
+                const quotesRes = await fetch('http://localhost:5081/api/BuyerLogisticsJob/my-quotes', { headers });
+                if (quotesRes.ok) {
+                    const data = await quotesRes.json();
+                    // Only count quotes that are still "Pending" (actually quoted, not accepted/rejected)
+                    const pendingQuotes = data.filter(quote => quote.status === 'Pending');
+                    setQuotesSubmittedCount(pendingQuotes.length);
+                }
+
+                // Load Job History - Only show COMPLETED jobs
+                const history = JSON.parse(localStorage.getItem('jobHistory') || '[]');
+                const completedHistory = history.filter(job =>
+                    job.status === 'Completed' || job.status === 'Delivered'
+                );
+                setJobHistory(completedHistory);
+
+            } catch (error) {
+                console.error("Error fetching dashboard stats:", error);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
+    const stats = [
+        { label: 'Available Jobs', value: availableJobsCount, icon: <Truck size={24} />, route: `/logistics/available-jobs/${localStorage.getItem('userId')}` },
+        { label: 'Assigned Jobs', value: assignedJobsCount, icon: <CheckCircle size={24} />, route: `/logistics/assigned-jobs/${localStorage.getItem('userId')}` },
+        { label: 'Quotes Submitted', value: quotesSubmittedCount, icon: <FileText size={24} />, route: `/logistics/available-jobs/${localStorage.getItem('userId')}`, state: { filter: 'Quoted' } },
+    ];
+
+    return (
+        <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+            {/* Header */}
+            <header style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
+                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</div>
+                    <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>
+                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }} style={{ color: 'var(--text-main)', cursor: 'pointer' }}>Dashboard</a>
+                        <span onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/available-jobs/${userId}`); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Search Jobs</span>
+                        <span onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/assigned-jobs/${userId}`); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Assigned Jobs</span>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                    <Bell size={20} color="var(--text-muted)" />
+                    <div
+                        style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                        onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/profile/${userId}`); }}
+                    >
+                        <User size={18} color="var(--text-muted)" />
+                    </div>
+                </div>
+            </header>
+
+            <main className="container" style={{ padding: '3rem 1rem', maxWidth: '1200px' }}>
+                <div style={{ marginBottom: '3rem' }}>
+                    <h1 style={{ fontSize: '2rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-main)' }}>Logistics Dashboard</h1>
+                    <p style={{ color: 'var(--text-muted)' }}>Manage your logistics operations and job assignments</p>
+                </div>
+
+                {/* Stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
+                    {stats.map((stat, index) => (
+                        <div
+                            key={index}
+                            className="card"
+                            onClick={() => stat.route && navigate(stat.route, { state: stat.state })}
+                            style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: stat.route ? 'pointer' : 'default' }}
+                        >
+                            <div>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{stat.label}</p>
+                                <h3 style={{ fontSize: '2.5rem', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>{stat.value}</h3>
+                            </div>
+                            <div style={{ width: '50px', height: '50px', background: '#f1f5f9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)' }}>
+                                {stat.icon}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Job History */}
+                {jobHistory.length > 0 && (
+                    <div style={{ marginBottom: '3rem' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Job History</h3>
+                        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
+                                    <tr>
+                                        <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Job ID</th>
+                                        <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Route</th>
+                                        <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Status</th>
+                                        <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Date Accepted</th>
+                                        <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Driver Experience</th>
+                                        <th style={{ padding: '1rem 1.5rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Vehicle Recommended</th>
+                                        <th style={{ padding: '1rem 1.5rem', textAlign: 'right', fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: '600' }}>Distance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {jobHistory.map((job, index) => (
+                                        <tr key={index} style={{ borderBottom: '1px solid var(--border)' }}>
+                                            <td style={{ padding: '1rem 1.5rem', fontWeight: '500' }}>
+                                                {job.id && job.id.length > 8 ? `JOB-${job.id.substring(0, 8).toUpperCase()}` : job.id}
+                                            </td>
+                                            <td style={{ padding: '1rem 1.5rem' }}>{job.origin} → {job.destination}</td>
+                                            <td style={{ padding: '1rem 1.5rem' }}>
+                                                <span style={{
+                                                    padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '500',
+                                                    background: '#ecfdf5', color: '#059669'
+                                                }}>
+                                                    {job.status}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{job.date}</td>
+                                            <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{job.driverExp || '-'}</td>
+                                            <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{job.vehicleType || '-'}</td>
+                                            <td style={{ padding: '1rem 1.5rem', textAlign: 'right', color: 'var(--text-muted)' }}>{job.distance}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+            </main>
+        </div>
+    );
+};
+
+
+export default LogisticsDashboard;

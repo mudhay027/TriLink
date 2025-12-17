@@ -167,12 +167,16 @@ const SearchProducts = () => {
         const date = e.target[2].value;
 
         try {
+            const totalAmount = parseFloat(price) * parseFloat(qty);
+            const formattedDate = new Date(date).toLocaleDateString('en-GB'); // dd/mm/yyyy format
+
             const response = await api.post('/Negotiation', {
                 productId: selectedProduct.id,
                 initialOfferAmount: parseFloat(price),
-                message: `Counter Offer: ${qty} units at ₹${price} by ${date}`,
+                message: `Counter Offer: ${qty} ${selectedProduct.unit} at ₹${totalAmount}`,
                 quantity: parseFloat(qty) || 1,
                 unit: selectedProduct.unit || 'Unit',
+                desiredDeliveryDate: date,
                 status: 'Negotiation'
             });
             console.log("Negotiation Created:", response);

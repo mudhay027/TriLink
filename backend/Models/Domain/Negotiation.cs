@@ -18,7 +18,9 @@ namespace Backend.Models.Domain
         
         public decimal CurrentOfferAmount { get; set; }
         public decimal Quantity { get; set; } // Requested quantity
-        public string Unit { get; set; } // Unit of measurement (Ton, Kg, etc)
+        public string Unit { get; set; } // Unit of measurement
+        public decimal ProductQuantity { get; set; } // Quantity from product
+        public DateTime? DesiredDeliveryDate { get; set; } // When buyer needs the product
         
         // Navigation property for history
         public List<Offer> Offers { get; set; }

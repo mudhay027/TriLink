@@ -51,6 +51,7 @@ namespace Backend.Controllers
                 CurrentOfferAmount = createDto.InitialOfferAmount,
                 Quantity = createDto.Quantity,
                 Unit = createDto.Unit,
+                DesiredDeliveryDate = createDto.DesiredDeliveryDate,
                 Offers = new List<Offer>
                 {
                     new Offer

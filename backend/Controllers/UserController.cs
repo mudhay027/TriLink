@@ -53,6 +53,16 @@ namespace Backend.Controllers
             return Ok(responseDto);
         }
 
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetUserById(Guid id)
+        {
+            var user = await _userRepository.GetByIdAsync(id);
+            if (user == null) return NotFound();
+
+            var userDto = _mapper.Map<UserProfileDto>(user);
+            return Ok(userDto);
+        }
+
         private Guid GetUserId()
         {
             var idClaim = User.FindFirst("id");

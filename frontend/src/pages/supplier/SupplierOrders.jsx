@@ -54,26 +54,22 @@ const SupplierOrders = () => {
 
                     // Filter for 'Negotiation' status (pending requests)
                     const negotiations = negData.filter(n => n.status === 'Negotiation').map(n => {
-                        // Extract message from the latest offer if available
-                        const latestOffer = n.offers && n.offers.length > 0 ? n.offers[n.offers.length - 1] : null;
-                        const message = latestOffer?.message || '';
-
-                        // Parse quantity and counter price from message
-                        // Message format: "Counter Offer: ${qty} units at ₹${price} by ${date}"
-                        let quantity = 'N/A';
-                        if (message.includes('units')) {
-                            const qtyPart = message.split('units')[0].replace('Counter Offer:', '').trim();
-                            quantity = qtyPart + ' ' + (n.productUnit || 'units');
-                        }
+                        // Use quantity directly from negotiation data
+                        const quantity = n.quantity ? `${n.quantity} ${n.productUnit || n.unit || 'units'}` : 'N/A';
 
                         return {
                             id: n.id,
-                            buyer: n.buyerName || 'Unknown Buyer',
+                            buyer: n.buyerCompanyName || n.buyerName || 'Unknown Buyer',
+                            buyerId: n.buyerId,
+                            buyerEmail: n.buyerEmail || n.buyerName,
+                            buyerPhone: n.buyerPhone,
+                            buyerLocation: n.buyerLocation,
                             product: n.productName || 'Unknown Product',
                             productImage: n.productImageUrl || '/placeholder-product.png',
                             originalOffer: `₹${n.productBasePrice || 0}/${n.productUnit || 'unit'}`,
                             counterOffer: `₹${n.currentOfferAmount || 0}`,
                             quantity: quantity,
+                            expectedDelivery: n.desiredDeliveryDate ? new Date(n.desiredDeliveryDate).toLocaleDateString() : 'N/A',
                             status: n.status
                         };
                     });
@@ -81,21 +77,22 @@ const SupplierOrders = () => {
 
                     // Filter for 'InNegotiation' status (active negotiations)
                     const activeNegs = negData.filter(n => n.status === 'InNegotiation').map(n => {
-                        const latestOffer = n.offers && n.offers.length > 0 ? n.offers[n.offers.length - 1] : null;
-                        const message = latestOffer?.message || '';
-                        let quantity = 'N/A';
-                        if (message.includes('units')) {
-                            const qtyPart = message.split('units')[0].replace('Counter Offer:', '').trim();
-                            quantity = qtyPart + ' ' + (n.productUnit || 'units');
-                        }
+                        // Use quantity directly from negotiation data
+                        const quantity = n.quantity ? `${n.quantity} ${n.productUnit || n.unit || 'units'}` : 'N/A';
+
                         return {
                             id: n.id,
-                            buyer: n.buyerName || 'Unknown Buyer',
+                            buyer: n.buyerCompanyName || n.buyerName || 'Unknown Buyer',
+                            buyerId: n.buyerId,
+                            buyerEmail: n.buyerEmail || n.buyerName,
+                            buyerPhone: n.buyerPhone,
+                            buyerLocation: n.buyerLocation,
                             product: n.productName || 'Unknown Product',
                             productImage: n.productImageUrl || '/placeholder-product.png',
                             originalOffer: `₹${n.productBasePrice || 0}/${n.productUnit || 'unit'}`,
                             counterOffer: `₹${n.currentOfferAmount || 0}`,
                             quantity: quantity,
+                            expectedDelivery: n.desiredDeliveryDate ? new Date(n.desiredDeliveryDate).toLocaleDateString() : 'N/A',
                             status: n.status
                         };
                     });
@@ -112,7 +109,8 @@ const SupplierOrders = () => {
                         }
                         return {
                             id: n.id,
-                            buyer: n.buyerName || 'Unknown Buyer',
+                            buyer: n.buyerCompanyName || n.buyerName || 'Unknown Buyer',
+                            buyerId: n.buyerId,
                             product: n.productName || 'Unknown Product',
                             productImage: n.productImageUrl || '/placeholder-product.png',
                             originalOffer: `₹${n.productBasePrice || 0}/${n.productUnit || 'unit'}`,
@@ -179,6 +177,45 @@ const SupplierOrders = () => {
     // Modal State
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [selectedOrderId, setSelectedOrderId] = useState(null);
+
+    // Buyer Details Modal State
+    const [showBuyerModal, setShowBuyerModal] = useState(false);
+    const [buyerDetails, setBuyerDetails] = useState(null);
+    const [loadingBuyerDetails, setLoadingBuyerDetails] = useState(false);
+    const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
+
+    const fetchBuyerDetails = async (buyerId, event) => {
+        setLoadingBuyerDetails(true);
+
+        // Calculate position near the button
+        const buttonRect = event.target.getBoundingClientRect();
+        setModalPosition({
+            top: buttonRect.bottom + window.scrollY + 5,
+            left: buttonRect.left + window.scrollX
+        });
+
+        setShowBuyerModal(true);
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5081/api/User/${buyerId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setBuyerDetails(data);
+            } else {
+                alert('Failed to fetch buyer details');
+                setShowBuyerModal(false);
+            }
+        } catch (error) {
+            console.error('Error fetching buyer details:', error);
+            alert('Error fetching buyer details');
+            setShowBuyerModal(false);
+        } finally {
+            setLoadingBuyerDetails(false);
+        }
+    };
 
     const handleCancelOrderClick = (orderId) => {
         setSelectedOrderId(orderId);
@@ -262,6 +299,87 @@ const SupplierOrders = () => {
                                 Yes, Cancel Order
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Buyer Details Modal */}
+            {showBuyerModal && (
+                <div
+                    onClick={() => {
+                        setShowBuyerModal(false);
+                        setBuyerDetails(null);
+                    }}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'transparent',
+                        zIndex: 999
+                    }}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            position: 'absolute',
+                            top: `${modalPosition.top}px`,
+                            left: `${modalPosition.left}px`,
+                            background: 'white',
+                            padding: '1.5rem',
+                            borderRadius: '8px',
+                            width: '350px',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                            border: '1px solid #e2e8f0',
+                            zIndex: 1000
+                        }}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: 0 }}>Buyer Details</h3>
+                            <button
+                                onClick={() => {
+                                    setShowBuyerModal(false);
+                                    setBuyerDetails(null);
+                                }}
+                                style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#94a3b8' }}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        {loadingBuyerDetails ? (
+                            <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                Loading...
+                            </div>
+                        ) : buyerDetails ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Company Name</div>
+                                    <div style={{ fontSize: '1rem', fontWeight: '600' }}>{buyerDetails.companyName || 'N/A'}</div>
+                                </div>
+
+                                <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Contact Person</div>
+                                    <div style={{ fontSize: '0.9rem' }}>{buyerDetails.contactPerson || 'N/A'}</div>
+                                </div>
+
+                                <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Email</div>
+                                    <div style={{ fontSize: '0.9rem', color: '#3b82f6' }}>{buyerDetails.email || 'N/A'}</div>
+                                </div>
+
+                                <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Phone</div>
+                                    <div style={{ fontSize: '0.9rem' }}>{buyerDetails.contactNumber || 'N/A'}</div>
+                                </div>
+
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Location</div>
+                                    <div style={{ fontSize: '0.9rem' }}>{buyerDetails.addressLine1 || 'N/A'}</div>
+                                </div>
+                            </div>
+                        ) : null}
                     </div>
                 </div>
             )}
@@ -389,8 +507,25 @@ const SupplierOrders = () => {
                                 <div key={req.id} className="card" style={{ padding: '1.5rem', marginBottom: '1rem', borderLeft: '4px solid #10b981' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                         <div>
-                                            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.25rem' }}>{req.buyer}</h3>
-                                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Negotiating for {req.product}</p>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0' }}>{req.buyer}</h3>
+                                                <button
+                                                    onClick={(e) => fetchBuyerDetails(req.buyerId, e)}
+                                                    style={{
+                                                        padding: '0.25rem 0.75rem',
+                                                        background: '#3b82f6',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: '500',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    Buyer Details
+                                                </button>
+                                            </div>
+                                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Negotiating for {req.product}</p>
                                         </div>
                                         <span style={{ color: '#10b981', fontWeight: '500', fontSize: '0.9rem', background: '#d1fae5', padding: '0.3rem 0.8rem', borderRadius: '6px', height: 'fit-content' }}>
                                             In Progress
@@ -417,7 +552,7 @@ const SupplierOrders = () => {
                                         </div>
 
                                         {/* Details Grid */}
-                                        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
+                                        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1.5rem' }}>
                                             <div>
                                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Original Price</div>
                                                 <div style={{ fontWeight: '500', textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.95rem' }}>{req.originalOffer}</div>
@@ -429,6 +564,10 @@ const SupplierOrders = () => {
                                             <div>
                                                 <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Quantity</div>
                                                 <div style={{ fontWeight: '500', fontSize: '0.95rem' }}>{req.quantity}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Expected Delivery</div>
+                                                <div style={{ fontWeight: '500', fontSize: '0.95rem', color: '#3b82f6' }}>{req.expectedDelivery}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -456,8 +595,25 @@ const SupplierOrders = () => {
                             <div key={req.id} className="card" style={{ padding: '1.5rem', marginBottom: '1rem', borderLeft: '4px solid #f97316' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                                     <div>
-                                        <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0.25rem' }}>{req.buyer}</h3>
-                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Requested a counter-offer for {req.product}</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0' }}>{req.buyer}</h3>
+                                            <button
+                                                onClick={(e) => fetchBuyerDetails(req.buyerId, e)}
+                                                style={{
+                                                    padding: '0.25rem 0.75rem',
+                                                    background: '#3b82f6',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '500',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                Buyer Details
+                                            </button>
+                                        </div>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Requested a counter-offer for {req.product}</p>
                                     </div>
                                     <span style={{ color: '#f97316', fontWeight: '500', fontSize: '0.9rem', background: '#fff7ed', padding: '0.3rem 0.8rem', borderRadius: '6px', height: 'fit-content' }}>
                                         Action Required
@@ -484,7 +640,7 @@ const SupplierOrders = () => {
                                     </div>
 
                                     {/* Details Grid */}
-                                    <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem' }}>
+                                    <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1.5rem' }}>
                                         <div>
                                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Original Price</div>
                                             <div style={{ fontWeight: '500', textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.95rem' }}>{req.originalOffer}</div>
@@ -496,6 +652,10 @@ const SupplierOrders = () => {
                                         <div>
                                             <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Quantity</div>
                                             <div style={{ fontWeight: '500', fontSize: '0.95rem' }}>{req.quantity}</div>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Expected Delivery</div>
+                                            <div style={{ fontWeight: '500', fontSize: '0.95rem', color: '#3b82f6' }}>{req.expectedDelivery}</div>
                                         </div>
                                     </div>
                                 </div>

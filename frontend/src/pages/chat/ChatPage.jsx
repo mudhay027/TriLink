@@ -17,6 +17,15 @@ const ChatPage = () => {
     const [newMessage, setNewMessage] = useState('');
     const [threadInfo, setThreadInfo] = useState(null);
     const [connection, setConnection] = useState(null);
+
+    // Counter Offer Form State
+    const [showCounterOfferForm, setShowCounterOfferForm] = useState(false);
+    const [pricePerUnit, setPricePerUnit] = useState('');
+    const [quantity, setQuantity] = useState('');
+
+
+    // Computed total price
+    const totalPrice = pricePerUnit && quantity ? parseFloat(pricePerUnit) * parseFloat(quantity) : 0;
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef(null);
 
@@ -172,18 +181,29 @@ const ChatPage = () => {
                                 id: offer.id,
                                 amount: offer.amount,
                                 quantity: offer.quantity || data.quantity,
+                                unit: data.unit,
                                 status: 'Pending'
                             } : null,
                             createdAt: offer.createdAt,
                             isRead: true
                         }));
+
+                        // Sort messages chronologically by createdAt timestamp
+                        offerMessages.sort((a, b) => {
+                            const dateA = new Date(a.createdAt);
+                            const dateB = new Date(b.createdAt);
+                            return dateA - dateB;
+                        });
+
                         setMessages(offerMessages);
                         setThreadInfo({
                             buyerId: data.buyerId,
                             supplierId: data.sellerId,
                             buyerCompanyName: data.buyerCompanyName,
                             supplierCompanyName: data.sellerCompanyName,
-                            productName: data.productName
+                            productName: data.productName,
+                            unit: data.unit,
+                            desiredDeliveryDate: data.desiredDeliveryDate
                         });
                     }
                 } catch (error) {
@@ -328,6 +348,69 @@ const ChatPage = () => {
         return { name: thread.buyerCompanyName || thread.buyerName, role: 'Buyer' };
     };
 
+    const handleSendCounterOffer = async () => {
+        console.log('=== Counter Offer Debug ===');
+        console.log('pricePerUnit:', pricePerUnit);
+        console.log('quantity:', quantity);
+        console.log('selectedThread:', selectedThread);
+        console.log('threadInfo:', threadInfo);
+        console.log('totalPrice:', totalPrice);
+
+        if (!pricePerUnit || !quantity || !selectedThread) {
+            console.error('Validation failed!');
+            alert('Please fill in all fields');
+            return;
+        }
+
+        try {
+            // Use the negotiation ID from selectedThread
+            const negotiationId = selectedThread.id;
+            console.log('Negotiation ID:', negotiationId);
+
+            const requestBody = {
+                amount: parseFloat(pricePerUnit),
+                message: `Counter Offer: ${quantity} ${threadInfo?.unit || 'units'} at ₹${totalPrice}`,
+                quantity: parseFloat(quantity)
+            };
+            console.log('Request body:', requestBody);
+
+            const response = await fetch(`http://localhost:5081/api/Negotiation/${negotiationId}/offers`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
+            if (response.ok) {
+                // Clear form and close
+                setPricePerUnit('');
+                setQuantity('');
+                setShowCounterOfferForm(false);
+
+                // Trigger message refresh by reloading the thread
+                const currentThreadId = selectedThread.id;
+                setSelectedThread(null);
+                setTimeout(() => {
+                    setSelectedThread(threads.find(t => t.id === currentThreadId));
+                }, 100);
+            } else {
+                const errorText = await response.text();
+                console.error('Failed to send counter offer. Status:', response.status);
+                console.error('Error response:', errorText);
+                alert(`Failed to send counter offer: ${errorText}`);
+            }
+        } catch (error) {
+            console.error('Error sending counter offer:', error);
+            alert(`Error sending counter offer: ${error.message}`);
+        }
+    };
+
+
     return (
         <div style={{ display: 'flex', height: '100vh', background: '#f0f2f5' }}>
             {/* Sidebar - Thread List */}
@@ -407,7 +490,7 @@ const ChatPage = () => {
                                                 textOverflow: 'ellipsis',
                                                 whiteSpace: 'nowrap'
                                             }}>
-                                                {thread.lastMessage || thread.productName}
+                                                {thread.productName}
                                             </span>
                                             {thread.unreadCount > 0 && (
                                                 <span style={{
@@ -458,12 +541,29 @@ const ChatPage = () => {
                             }}>
                                 <User size={20} color="#667781" />
                             </div>
-                            <div>
+                            <div style={{ flex: 1 }}>
                                 <div style={{ fontWeight: '500' }}>{getOtherParticipant(selectedThread).name}</div>
                                 <div style={{ fontSize: '0.8rem', color: '#667781' }}>
                                     {isTyping ? 'typing...' : selectedThread.productName}
                                 </div>
                             </div>
+
+                            {/* Toggle Counter Offer Button */}
+                            <button
+                                onClick={() => setShowCounterOfferForm(!showCounterOfferForm)}
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    background: showCounterOfferForm ? '#25d366' : '#3b82f6',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '0.85rem',
+                                    fontWeight: '500',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {showCounterOfferForm ? 'Hide Offer Form' : 'Make Counter Offer'}
+                            </button>
                         </div>
 
                         {/* Messages Area */}
@@ -517,8 +617,11 @@ const ChatPage = () => {
                                                         </span>
                                                     </div>
                                                     <div style={{ fontSize: '0.9rem' }}>
-                                                        <div>Amount: <strong>₹{msg.offer.amount}</strong></div>
-                                                        <div>Quantity: <strong>{msg.offer.quantity}</strong></div>
+                                                        <div>Amount: <strong>₹{msg.offer.amount}/{threadInfo?.unit || 'unit'}</strong></div>
+                                                        <div>Counter Offer: <strong>{msg.offer.quantity} {threadInfo?.unit || 'units'} at ₹{msg.offer.amount * msg.offer.quantity}</strong></div>
+                                                        {threadInfo?.desiredDeliveryDate && (
+                                                            <div>Expected Delivery: <strong>{new Date(threadInfo.desiredDeliveryDate).toLocaleDateString('en-GB')}</strong></div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             )}
@@ -549,6 +652,102 @@ const ChatPage = () => {
                             })}
                             <div ref={messagesEndRef} />
                         </div>
+
+                        {/* Counter Offer Form */}
+                        {showCounterOfferForm && (
+                            <div style={{
+                                padding: '1.5rem',
+                                background: 'white',
+                                borderTop: '1px solid #e0e0e0',
+                                borderBottom: '1px solid #e0e0e0'
+                            }}>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1rem' }}>Send Counter Offer</h3>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                    {/* Price per Unit */}
+                                    <div>
+                                        <label style={{ fontSize: '0.85rem', color: '#667781', marginBottom: '0.5rem', display: 'block' }}>
+                                            Price (₹/{threadInfo?.unit || 'unit'})
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={pricePerUnit}
+                                            onChange={(e) => setPricePerUnit(e.target.value)}
+                                            placeholder="0"
+                                            style={{
+                                                width: '100%',
+                                                padding: '0.6rem',
+                                                border: '1px solid #e0e0e0',
+                                                borderRadius: '6px',
+                                                fontSize: '0.95rem'
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Quantity */}
+                                    <div>
+                                        <label style={{ fontSize: '0.85rem', color: '#667781', marginBottom: '0.5rem', display: 'block' }}>
+                                            Quantity
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={quantity}
+                                            onChange={(e) => setQuantity(e.target.value)}
+                                            placeholder="0"
+                                            style={{
+                                                width: '100%',
+                                                padding: '0.6rem',
+                                                border: '1px solid #e0e0e0',
+                                                borderRadius: '6px',
+                                                fontSize: '0.95rem'
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Total Price (Read-only) */}
+                                    <div>
+                                        <label style={{ fontSize: '0.85rem', color: '#667781', marginBottom: '0.5rem', display: 'block' }}>
+                                            Total Price
+                                        </label>
+                                        <div style={{
+                                            width: '100%',
+                                            padding: '0.6rem',
+                                            background: '#f0f2f5',
+                                            border: '1px solid #e0e0e0',
+                                            borderRadius: '6px',
+                                            fontSize: '0.95rem',
+                                            fontWeight: '600',
+                                            color: '#25d366'
+                                        }}>
+                                            ₹{totalPrice.toFixed(2)}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Send Button */}
+                                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                    <button
+                                        onClick={handleSendCounterOffer}
+                                        style={{
+                                            padding: '0.6rem 1.5rem',
+                                            background: 'black',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            fontSize: '0.95rem',
+                                            fontWeight: '500',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.5rem'
+                                        }}
+                                    >
+                                        <Send size={16} />
+                                        Send Counter Offer
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Message Input */}
                         <div style={{

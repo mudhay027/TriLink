@@ -21,6 +21,7 @@ namespace Backend.Models.DTO
         public decimal Quantity { get; set; } // Requested quantity
         public string Unit { get; set; } // Unit of measurement
         public decimal ProductQuantity { get; set; } // Quantity from product
+        public DateTime? DesiredDeliveryDate { get; set; } // When buyer needs the product
         public List<OfferDto> Offers { get; set; }
     }
 
@@ -31,6 +32,7 @@ namespace Backend.Models.DTO
         public string Message { get; set; }
         public decimal Quantity { get; set; } // Buyer's requested quantity
         public string Unit { get; set; } // Unit of measurement
+        public DateTime? DesiredDeliveryDate { get; set; } // When buyer needs the product
         public string? Status { get; set; } // Optional status override
     }
 

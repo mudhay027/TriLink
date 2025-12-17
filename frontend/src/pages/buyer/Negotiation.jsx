@@ -74,6 +74,13 @@ const Negotiation = () => {
                         allMessages.push(...counterOffers);
                     }
 
+                    // Sort all messages chronologically by createdAt timestamp
+                    allMessages.sort((a, b) => {
+                        const dateA = new Date(a.date);
+                        const dateB = new Date(b.date);
+                        return dateA - dateB;
+                    });
+
                     setMessages(allMessages);
                 }
             } catch (error) {
@@ -117,7 +124,7 @@ const Negotiation = () => {
     };
 
     return (
-        <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+        <div className="fade-in" style={{ minHeight: '100vh', background: '#f0f2f5' }}>
             {/* Navigation Bar */}
             <nav style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
@@ -152,7 +159,7 @@ const Negotiation = () => {
                     </div>
 
                     {/* Message Thread */}
-                    <div style={{ marginBottom: '2rem', maxHeight: '500px', overflowY: 'auto', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
+                    <div style={{ marginBottom: '2rem', maxHeight: '500px', overflowY: 'auto', padding: '1rem', background: '#e5ddd5', borderRadius: '8px' }}>
                         {messages.length === 0 ? (
                             <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                                 No messages yet. Start the negotiation!
@@ -162,8 +169,8 @@ const Negotiation = () => {
                                 <div key={msg.id} style={{ marginBottom: '1.5rem' }}>
                                     {/* Sender Info */}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                        <div style={{ width: '32px', height: '32px', background: msg.sender === 'You' ? '#1e40af' : '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <User size={16} color={msg.sender === 'You' ? 'white' : 'var(--text-muted)'} />
+                                        <div style={{ width: '32px', height: '32px', background: msg.sender === 'You' ? '#0084ff' : '#25d366', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <User size={16} color="white" />
                                         </div>
                                         <div>
                                             <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>{msg.sender}</div>
@@ -172,15 +179,16 @@ const Negotiation = () => {
 
                                     {/* Message Content */}
                                     <div style={{
-                                        background: msg.sender === 'You' ? '#1e40af' : 'white',
-                                        color: msg.sender === 'You' ? 'white' : 'var(--text-main)',
+                                        background: msg.sender === 'You' ? '#0084ff' : '#dcf8c6',
+                                        color: msg.sender === 'You' ? 'white' : '#303030',
                                         padding: '1rem',
                                         borderRadius: '8px',
                                         marginLeft: '2.5rem',
-                                        border: msg.sender === 'You' ? 'none' : '1px solid var(--border)'
+                                        border: 'none',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
                                     }}>
                                         <p style={{ marginBottom: '0.75rem', whiteSpace: 'pre-line' }}>{msg.message}</p>
-                                        <div style={{ display: 'flex', gap: '2rem', fontSize: '0.85rem', borderTop: msg.sender === 'You' ? '1px solid rgba(255,255,255,0.2)' : '1px solid var(--border)', paddingTop: '0.75rem' }}>
+                                        <div style={{ display: 'flex', gap: '2rem', fontSize: '0.85rem', borderTop: msg.sender === 'You' ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.1)', paddingTop: '0.75rem' }}>
                                             <div><strong>Qty:</strong> {msg.quantity}</div>
                                             <div><strong>Price:</strong> {msg.price}</div>
                                         </div>
@@ -191,7 +199,7 @@ const Negotiation = () => {
                     </div>
 
                     {/* Message Input */}
-                    <div style={{ display: 'flex', gap: '0.75rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', padding: '1rem', background: 'white', borderRadius: '8px', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
                         <input
                             type="text"
                             value={newMessage}

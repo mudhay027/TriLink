@@ -52,7 +52,6 @@ namespace Backend.Mappings
 
             CreateMap<Order, OrderDto>()
                  .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product != null ? src.Product.Name : null))
-                 .ForMember(dest => dest.Quantity, opt => opt.MapFrom(src => src.Product != null ? src.Product.Quantity : 0))
                  .ForMember(dest => dest.Unit, opt => opt.MapFrom(src => src.Product != null ? src.Product.Unit : ""))
                  .ForMember(dest => dest.BuyerName, opt => opt.MapFrom(src => src.Buyer != null ? src.Buyer.Username : null))
                  .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Seller != null ? src.Seller.Username : null));

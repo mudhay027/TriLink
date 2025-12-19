@@ -37,9 +37,9 @@ const Negotiation = () => {
                     allMessages.push({
                         id: 'initial-' + data.id,
                         sender: data.sellerCompanyName || data.sellerName || 'Supplier',
-                        message: `Initial Offer: ₹${initialPrice}/${data.unit || data.productUnit || 'unit'}`,
+                        message: `Initial Offer: ₹${data.pricePerUnit || initialPrice}/${data.unit || data.productUnit || 'unit'}`,
                         quantity: `${data.quantity || data.productQuantity || 'N/A'} ${data.unit || data.productUnit || 'units'}`,
-                        price: `₹${initialTotal.toFixed(2)}`,
+                        price: `₹${(data.totalPrice || initialTotal).toFixed(2)}`,
                         date: new Date(data.createdAt).toLocaleString()
                     });
 
@@ -56,8 +56,8 @@ const Negotiation = () => {
                             // Fallback to negotiation quantity
                             if (offerQty === 0) offerQty = parseFloat(data.quantity) || 0;
 
-                            const offerPrice = parseFloat(offer.amount) || 0;
-                            const offerTotal = offerQty * offerPrice;
+                            const offerPrice = parseFloat(offer.pricePerUnit || offer.amount) || 0;
+                            const offerTotal = parseFloat(offer.totalPrice || (offerPrice * offerQty)) || 0;
                             const displayUnit = data.unit || data.productUnit || 'units';
 
                             return {

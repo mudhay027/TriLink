@@ -15,7 +15,10 @@ namespace Backend.Models.Domain
         public Guid SellerId { get; set; }
         public User Seller { get; set; }
 
-        public decimal FinalPrice { get; set; }
+        public decimal FinalPrice { get; set; } // Legacy field, same as TotalPrice
+        public decimal PricePerUnit { get; set; }
+        public decimal Quantity { get; set; }
+        public decimal TotalPrice { get; set; }
         public string Status { get; set; } = "Confirmed"; // Confirmed, Shipped, Delivered
 
         public DateTime CreatedAt { get; set; }

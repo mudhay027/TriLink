@@ -49,6 +49,8 @@ namespace Backend.Controllers
                 SellerId = product.SupplierId,
                 Status = createDto.Status ?? "Pending",
                 CurrentOfferAmount = createDto.InitialOfferAmount,
+                PricePerUnit = createDto.PricePerUnit > 0 ? createDto.PricePerUnit : (createDto.Quantity > 0 ? createDto.InitialOfferAmount / createDto.Quantity : 0),
+                TotalPrice = createDto.TotalPrice > 0 ? createDto.TotalPrice : createDto.InitialOfferAmount,
                 Quantity = createDto.Quantity,
                 Unit = createDto.Unit,
                 DesiredDeliveryDate = createDto.DesiredDeliveryDate,
@@ -58,6 +60,8 @@ namespace Backend.Controllers
                     {
                         Id = Guid.NewGuid(),
                         Amount = createDto.InitialOfferAmount,
+                        PricePerUnit = createDto.PricePerUnit > 0 ? createDto.PricePerUnit : (createDto.Quantity > 0 ? createDto.InitialOfferAmount / createDto.Quantity : 0),
+                        TotalPrice = createDto.TotalPrice > 0 ? createDto.TotalPrice : createDto.InitialOfferAmount,
                         Message = createDto.Message,
                         CreatedAt = DateTime.Now,
                         ProposerId = buyerId,
@@ -112,6 +116,8 @@ namespace Backend.Controllers
                 Id = Guid.NewGuid(),
                 NegotiationId = id,
                 Amount = offerDto.Amount,
+                PricePerUnit = offerDto.PricePerUnit > 0 ? offerDto.PricePerUnit : (offerDto.Quantity > 0 ? offerDto.Amount / offerDto.Quantity : 0),
+                TotalPrice = offerDto.TotalPrice > 0 ? offerDto.TotalPrice : offerDto.Amount,
                 Message = offerDto.Message,
                 CreatedAt = DateTime.Now,
                 ProposerId = userId,
@@ -120,8 +126,11 @@ namespace Backend.Controllers
 
             await _negotiationRepository.AddOfferAsync(offer);
             
-            negotiation.CurrentOfferAmount = offerDto.Amount;
-            // Maybe reset status to Pending if it was rejected?
+            negotiation.CurrentOfferAmount = offer.Amount;
+            negotiation.TotalPrice = offer.TotalPrice;
+            negotiation.PricePerUnit = offer.PricePerUnit;
+            negotiation.Quantity = offer.Quantity;
+
             await _negotiationRepository.UpdateAsync(id, negotiation);
 
             return Ok(_mapper.Map<OfferDto>(offer));
@@ -139,7 +148,75 @@ namespace Backend.Controllers
                 return Forbid();
             }
 
+            if (negotiation.Status == "Accepted" || negotiation.Status == "Rejected")
+            {
+                return BadRequest("Negotiation is already closed.");
+            }
+
             negotiation.Status = statusDto.Status;
+
+            // Update Offer Status
+            if (negotiation.Offers != null && negotiation.Offers.Any())
+            {
+                Offer? offerToUpdate = null;
+                if (statusDto.OfferId.HasValue)
+                {
+                    offerToUpdate = negotiation.Offers.FirstOrDefault(o => o.Id == statusDto.OfferId.Value);
+                }
+                else
+                {
+                    // Fallback: update the latest pending offer from the OTHER party
+                    offerToUpdate = negotiation.Offers
+                        .Where(o => o.ProposerId != userId && o.Status == "Pending")
+                        .OrderByDescending(o => o.CreatedAt)
+                        .FirstOrDefault();
+                }
+
+                if (offerToUpdate != null)
+                {
+                    // Only update offer status to Accepted/Rejected. 
+                    // Don't update for 'InNegotiation' as it should remain 'Pending' for action.
+                    if (statusDto.Status.Equals("Accepted", StringComparison.OrdinalIgnoreCase) || 
+                        statusDto.Status.Equals("Rejected", StringComparison.OrdinalIgnoreCase))
+                    {
+                        offerToUpdate.Status = statusDto.Status;
+
+                        // Add automated message to chat
+                        var autoMessage = new Offer
+                        {
+                            Id = Guid.NewGuid(),
+                            NegotiationId = negotiation.Id,
+                            Amount = 0,
+                            PricePerUnit = 0,
+                            TotalPrice = 0,
+                            Message = statusDto.Status.Equals("Accepted", StringComparison.OrdinalIgnoreCase) 
+                                ? "I have accepted the offer. Let's proceed with the order!" 
+                                : "I have rejected this offer.",
+                            CreatedAt = DateTime.Now,
+                            ProposerId = userId,
+                            Quantity = 0,
+                            Status = statusDto.Status
+                        };
+                        await _negotiationRepository.AddOfferAsync(autoMessage);
+                    }
+                    
+                    // If accepted, also sync negotiation totals to this offer just in case they diverged
+                    if (statusDto.Status.Equals("Accepted", StringComparison.OrdinalIgnoreCase))
+                    {
+                        negotiation.CurrentOfferAmount = offerToUpdate.Amount;
+                        negotiation.PricePerUnit = offerToUpdate.PricePerUnit;
+                        negotiation.Quantity = offerToUpdate.Quantity;
+                        negotiation.TotalPrice = offerToUpdate.TotalPrice;
+
+                        // Mark other pending offers as Rejected
+                        foreach (var otherOffer in negotiation.Offers.Where(o => o.Status == "Pending" && o.Id != offerToUpdate.Id))
+                        {
+                            otherOffer.Status = "Rejected";
+                        }
+                    }
+                }
+            }
+
             await _negotiationRepository.UpdateAsync(id, negotiation);
 
             if (statusDto.Status.Equals("Accepted", StringComparison.OrdinalIgnoreCase))
@@ -153,6 +230,9 @@ namespace Backend.Controllers
                     BuyerId = negotiation.BuyerId,
                     SellerId = negotiation.SellerId,
                     FinalPrice = negotiation.CurrentOfferAmount,
+                    PricePerUnit = negotiation.PricePerUnit,
+                    Quantity = negotiation.Quantity,
+                    TotalPrice = negotiation.TotalPrice,
                     Status = "Confirmed",
                     CreatedAt = DateTime.Now
                 };
@@ -160,19 +240,17 @@ namespace Backend.Controllers
                 await _orderRepository.CreateAsync(order);
 
                 // Create Logistics Request (Auto)
-                // Simplified Logic: Use Product Location as Pickup, Buyer Location (needs to be in User entity, but I missed it. Using Dummy Drop)
                 var logistics = new LogisticsEntry
                 {
                     Id = Guid.NewGuid(),
                     OrderId = order.Id,
                     Status = "Open",
-                    PickupLocation = negotiation.Product.Location,
-                    DropLocation = "Buyer Address (Placeholder)", // Should fetch from Buyer User profile
-                    EstimatedDistanceKm = new Random().Next(10, 500), // Mock Route Suggestion
-                    ProposedCost = 0 // Will be set by Provider
+                    PickupLocation = negotiation.Product?.Location ?? "Supplier Warehouse",
+                    DropLocation = "Buyer Address (Placeholder)", 
+                    EstimatedDistanceKm = new Random().Next(10, 500), 
+                    ProposedCost = 0 
                 };
                 
-                // Simple cost estimation logic: $1 per km
                 logistics.ProposedCost = (decimal)logistics.EstimatedDistanceKm * 1.5m;
 
                 await _logisticsRepository.CreateAsync(logistics);

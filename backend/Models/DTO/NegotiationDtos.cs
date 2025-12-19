@@ -18,6 +18,8 @@ namespace Backend.Models.DTO
         public string SellerCompanyName { get; set; }
         public string Status { get; set; }
         public decimal CurrentOfferAmount { get; set; }
+        public decimal PricePerUnit { get; set; }
+        public decimal TotalPrice { get; set; }
         public decimal Quantity { get; set; } // Requested quantity
         public string Unit { get; set; } // Unit of measurement
         public decimal ProductQuantity { get; set; } // Quantity from product
@@ -29,6 +31,8 @@ namespace Backend.Models.DTO
     {
         public Guid ProductId { get; set; }
         public decimal InitialOfferAmount { get; set; }
+        public decimal PricePerUnit { get; set; }
+        public decimal TotalPrice { get; set; }
         public string Message { get; set; }
         public decimal Quantity { get; set; } // Buyer's requested quantity
         public string Unit { get; set; } // Unit of measurement
@@ -40,16 +44,21 @@ namespace Backend.Models.DTO
     {
         public Guid Id { get; set; }
         public decimal Amount { get; set; }
+        public decimal PricePerUnit { get; set; }
+        public decimal TotalPrice { get; set; }
         public string Message { get; set; }
         public DateTime CreatedAt { get; set; }
         public Guid ProposerId { get; set; }
         public Guid SenderId { get; set; }
         public decimal Quantity { get; set; }
+        public string Status { get; set; }
     }
 
     public class AddOfferDto
     {
         public decimal Amount { get; set; }
+        public decimal PricePerUnit { get; set; }
+        public decimal TotalPrice { get; set; }
         public string Message { get; set; }
         public decimal Quantity { get; set; }
     }
@@ -57,5 +66,6 @@ namespace Backend.Models.DTO
     public class UpdateNegotiationStatusDto
     {
         public string Status { get; set; } // Accepted, Rejected
+        public Guid? OfferId { get; set; }
     }
 }

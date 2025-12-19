@@ -16,7 +16,9 @@ namespace Backend.Models.Domain
 
         public string Status { get; set; } = "Pending"; // Pending, Accepted, Rejected
         
-        public decimal CurrentOfferAmount { get; set; }
+        public decimal CurrentOfferAmount { get; set; } // This will be the TotalPrice for the final offer
+        public decimal PricePerUnit { get; set; }
+        public decimal TotalPrice { get; set; }
         public decimal Quantity { get; set; } // Requested quantity
         public string Unit { get; set; } // Unit of measurement
         public decimal ProductQuantity { get; set; } // Quantity from product
@@ -30,7 +32,9 @@ namespace Backend.Models.Domain
     {
         public Guid Id { get; set; }
         public Guid NegotiationId { get; set; }
-        public decimal Amount { get; set; }
+        public decimal Amount { get; set; } // Total amount for this offer
+        public decimal PricePerUnit { get; set; }
+        public decimal TotalPrice { get; set; }
         public string Message { get; set; }
         public DateTime CreatedAt { get; set; }
         public Guid ProposerId { get; set; } // Who made this offer (Buyer or Seller)

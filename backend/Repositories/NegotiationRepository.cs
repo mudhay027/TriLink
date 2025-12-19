@@ -56,11 +56,15 @@ namespace Backend.Repositories
 
         public async Task<Negotiation?> UpdateAsync(Guid id, Negotiation negotiation)
         {
-            var existing = await _context.Negotiations.FirstOrDefaultAsync(n => n.Id == id);
+            var existing = await _context.Negotiations.Include(n => n.Offers).FirstOrDefaultAsync(n => n.Id == id);
             if (existing == null) return null;
 
             existing.Status = negotiation.Status;
             existing.CurrentOfferAmount = negotiation.CurrentOfferAmount;
+            existing.PricePerUnit = negotiation.PricePerUnit;
+            existing.TotalPrice = negotiation.TotalPrice;
+            existing.Quantity = negotiation.Quantity;
+            existing.DesiredDeliveryDate = negotiation.DesiredDeliveryDate;
             
             await _context.SaveChangesAsync();
             return existing;

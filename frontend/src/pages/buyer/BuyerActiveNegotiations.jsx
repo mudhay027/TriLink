@@ -10,6 +10,7 @@ const BuyerActiveNegotiations = () => {
     const [negotiationRequests, setNegotiationRequests] = useState([]);
     const [activeNegotiations, setActiveNegotiations] = useState([]);
     const [rejectedNegotiations, setRejectedNegotiations] = useState([]);
+    const [completedNegotiations, setCompletedNegotiations] = useState([]);
 
     // Supplier Details Modal State
     const [showSupplierModal, setShowSupplierModal] = useState(false);
@@ -43,7 +44,7 @@ const BuyerActiveNegotiations = () => {
                             product: n.productName || 'Unknown Product',
                             productImage: n.productImageUrl || '/placeholder-product.png',
                             originalOffer: `₹${n.productBasePrice || 0}/${n.productUnit || 'unit'}`,
-                            counterOffer: `₹${n.currentOfferAmount || 0}`,
+                            counterOffer: (n.pricePerUnit > 0 && n.totalPrice > 0) ? `₹${n.pricePerUnit}/${n.unit || n.productUnit || 'unit'} (Total: ₹${n.totalPrice})` : `₹${n.currentOfferAmount || 0}`,
                             quantity: quantity,
                             expectedDelivery: n.desiredDeliveryDate ? new Date(n.desiredDeliveryDate).toLocaleDateString() : 'N/A',
                             status: n.status
@@ -64,7 +65,7 @@ const BuyerActiveNegotiations = () => {
                             product: n.productName || 'Unknown Product',
                             productImage: n.productImageUrl || '/placeholder-product.png',
                             originalOffer: `₹${n.productBasePrice || 0}/${n.productUnit || 'unit'}`,
-                            counterOffer: `₹${n.currentOfferAmount || 0}`,
+                            counterOffer: (n.pricePerUnit > 0 && n.totalPrice > 0) ? `₹${n.pricePerUnit}/${n.unit || n.productUnit || 'unit'} (Total: ₹${n.totalPrice})` : `₹${n.currentOfferAmount || 0}`,
                             quantity: quantity,
                             expectedDelivery: n.desiredDeliveryDate ? new Date(n.desiredDeliveryDate).toLocaleDateString() : 'N/A',
                             status: n.status
@@ -85,13 +86,33 @@ const BuyerActiveNegotiations = () => {
                             product: n.productName || 'Unknown Product',
                             productImage: n.productImageUrl || '/placeholder-product.png',
                             originalOffer: `₹${n.productBasePrice || 0}/${n.productUnit || 'unit'}`,
-                            counterOffer: `₹${n.currentOfferAmount || 0}`,
+                            counterOffer: (n.pricePerUnit > 0 && n.totalPrice > 0) ? `₹${n.pricePerUnit}/${n.unit || n.productUnit || 'unit'} (Total: ₹${n.totalPrice})` : `₹${n.currentOfferAmount || 0}`,
                             quantity: quantity,
                             expectedDelivery: n.desiredDeliveryDate ? new Date(n.desiredDeliveryDate).toLocaleDateString() : 'N/A',
                             status: 'Cancelled by Supplier'
                         };
                     });
                     setRejectedNegotiations(rejected);
+
+                    // Filter for 'Accepted' status (completed negotiations)
+                    const completed = negData.filter(n => n.status === 'Accepted').map(n => {
+                        const quantity = n.quantity ? `${n.quantity} ${n.productUnit || n.unit || 'units'}` : 'N/A';
+
+                        return {
+                            id: n.id,
+                            seller: n.sellerCompanyName || n.sellerName || 'Unknown Seller',
+                            sellerId: n.sellerId,
+                            sellerEmail: n.sellerName,
+                            product: n.productName || 'Unknown Product',
+                            productImage: n.productImageUrl || '/placeholder-product.png',
+                            originalOffer: `₹${n.productBasePrice || 0}/${n.productUnit || 'unit'}`,
+                            counterOffer: (n.pricePerUnit > 0 && n.totalPrice > 0) ? `₹${n.pricePerUnit}/${n.unit || n.productUnit || 'unit'} (Total: ₹${n.totalPrice})` : `₹${n.currentOfferAmount || 0}`,
+                            quantity: quantity,
+                            expectedDelivery: n.desiredDeliveryDate ? new Date(n.desiredDeliveryDate).toLocaleDateString() : 'N/A',
+                            status: 'Completed'
+                        };
+                    });
+                    setCompletedNegotiations(completed);
                 }
             } catch (error) {
                 console.error("Failed to fetch negotiations:", error);
@@ -168,7 +189,7 @@ const BuyerActiveNegotiations = () => {
 
                 {/* Tabs */}
                 <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', borderBottom: '1px solid var(--border)' }}>
-                    {['requests', 'active', 'history'].map((tab) => (
+                    {['requests', 'active', 'completed', 'history'].map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -184,7 +205,7 @@ const BuyerActiveNegotiations = () => {
                                 textTransform: 'capitalize'
                             }}
                         >
-                            {tab === 'requests' ? 'Negotiation Requests' : tab === 'active' ? 'Active Negotiation' : 'Order History'}
+                            {tab === 'requests' ? 'Negotiation Requests' : tab === 'active' ? 'Active Negotiation' : tab === 'completed' ? 'Completed Negotiation' : 'Order History'}
                         </button>
                     ))}
                 </div>
@@ -353,6 +374,98 @@ const BuyerActiveNegotiations = () => {
                                             style={{ padding: '0.5rem 1.5rem', background: '#10b981', color: 'white', borderRadius: '6px', fontWeight: '500', border: 'none', cursor: 'pointer' }}
                                         >
                                             Continue Negotiation
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+
+                {/* Completed Negotiation Tab */}
+                {activeTab === 'completed' && (
+                    <div className="fade-in">
+                        {completedNegotiations.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>No completed negotiations.</div>
+                        ) : (
+                            completedNegotiations.map((req) => (
+                                <div key={req.id} className="card" style={{ padding: '1.5rem', marginBottom: '1rem', borderLeft: '4px solid #3b82f6' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                        <div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '0' }}>{req.seller}</h3>
+                                                <button
+                                                    onClick={(e) => fetchSupplierDetails(req.sellerId, e)}
+                                                    style={{
+                                                        padding: '0.25rem 0.75rem',
+                                                        background: '#3b82f6',
+                                                        color: 'white',
+                                                        borderRadius: '6px',
+                                                        fontWeight: '500',
+                                                        fontSize: '0.75rem',
+                                                        border: 'none',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    Supplier Details
+                                                </button>
+                                            </div>
+                                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Negotiation completed for {req.product}</p>
+                                        </div>
+                                        <span style={{ color: '#3b82f6', fontWeight: '500', fontSize: '0.9rem', background: '#dbeafe', padding: '0.3rem 0.8rem', borderRadius: '6px', height: 'fit-content' }}>
+                                            Accepted
+                                        </span>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '1.5rem', background: '#f8fafc', padding: '1.5rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                                        {/* Product Image */}
+                                        <div style={{ flexShrink: 0 }}>
+                                            <img
+                                                src={`http://localhost:5081${req.productImage}`}
+                                                alt={req.product}
+                                                style={{
+                                                    width: '120px',
+                                                    height: '120px',
+                                                    objectFit: 'cover',
+                                                    borderRadius: '8px',
+                                                    border: '2px solid #e2e8f0'
+                                                }}
+                                                onError={(e) => {
+                                                    e.target.src = 'https://via.placeholder.com/120?text=No+Image';
+                                                }}
+                                            />
+                                        </div>
+
+                                        {/* Details Grid */}
+                                        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1.5rem' }}>
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Original Price</div>
+                                                <div style={{ fontWeight: '500', textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.95rem' }}>{req.originalOffer}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Accepted Offer</div>
+                                                <div style={{ fontWeight: '600', color: '#3b82f6', fontSize: '1.1rem' }}>{req.counterOffer}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Quantity</div>
+                                                <div style={{ fontWeight: '500', fontSize: '0.95rem' }}>{req.quantity}</div>
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', fontWeight: '500' }}>Expected Delivery</div>
+                                                <div style={{ fontWeight: '500', fontSize: '0.95rem', color: '#3b82f6' }}>{req.expectedDelivery}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                                        <button
+                                            onClick={() => {
+                                                const userId = localStorage.getItem('userId');
+                                                navigate(`/buyer/chat/${userId}?threadId=${req.id}`);
+                                            }}
+                                            style={{ padding: '0.5rem 1.5rem', background: '#3b82f6', color: 'white', borderRadius: '6px', fontWeight: '500', border: 'none', cursor: 'pointer' }}
+                                        >
+                                            View Chat
                                         </button>
                                     </div>
                                 </div>

@@ -150,7 +150,12 @@ const SupplierDashboard = () => {
                                                 </div>
                                             </td>
                                             <td style={{ padding: '1.25rem 1.5rem' }}>{offer.productName}</td>
-                                            <td style={{ padding: '1.25rem 1.5rem', fontWeight: '500' }}>₹{offer.currentOfferAmount}</td>
+                                            <td style={{ padding: '1.25rem 1.5rem', fontWeight: '500' }}>
+                                                {(offer.pricePerUnit > 0 && offer.totalPrice > 0)
+                                                    ? `₹${offer.pricePerUnit}/${offer.unit || 'unit'} (Total: ₹${offer.totalPrice})`
+                                                    : `₹${offer.currentOfferAmount}`}
+                                            </td>
+
                                             <td style={{ padding: '1.25rem 1.5rem' }}>
                                                 {offer.buyerEmail}<br />
                                                 {offer.buyerContactNumber}

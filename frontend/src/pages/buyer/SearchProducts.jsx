@@ -10,6 +10,7 @@ const SearchProducts = () => {
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState('details'); // 'details' or 'counter'
+    const [orderQty, setOrderQty] = useState(1);
 
     // Filter States
     const [filters, setFilters] = useState({
@@ -138,17 +139,21 @@ const SearchProducts = () => {
 
     const handleRequestOrder = (product) => {
         setSelectedProduct(product);
+        setOrderQty(product.minOrderQty || 1);
         setModalMode('details');
         setShowModal(true);
     };
 
     const handleAcceptOffer = async () => {
         try {
+            const totalPrice = selectedProduct.priceValue * orderQty;
             await api.post('/Negotiation', {
                 productId: selectedProduct.id,
-                initialOfferAmount: selectedProduct.priceValue,
+                initialOfferAmount: totalPrice,
+                pricePerUnit: selectedProduct.priceValue,
+                totalPrice: totalPrice,
                 message: "I accept the initial offer.",
-                quantity: selectedProduct.quantity || 1,
+                quantity: orderQty,
                 unit: selectedProduct.unit || 'Unit'
             });
             setShowModal(false);
@@ -167,14 +172,18 @@ const SearchProducts = () => {
         const date = e.target[2].value;
 
         try {
-            const totalAmount = parseFloat(price) * parseFloat(qty);
+            const proposedPricePerUnit = parseFloat(price);
+            const proposedQty = parseFloat(qty) || 1;
+            const totalAmount = proposedPricePerUnit * proposedQty;
             const formattedDate = new Date(date).toLocaleDateString('en-GB'); // dd/mm/yyyy format
 
             const response = await api.post('/Negotiation', {
                 productId: selectedProduct.id,
-                initialOfferAmount: parseFloat(price),
-                message: `Counter Offer: ${qty} ${selectedProduct.unit} at ₹${totalAmount}`,
-                quantity: parseFloat(qty) || 1,
+                initialOfferAmount: totalAmount,
+                pricePerUnit: proposedPricePerUnit,
+                totalPrice: totalAmount,
+                message: `Counter Offer: ${proposedQty} ${selectedProduct.unit} at ₹${totalAmount}`,
+                quantity: proposedQty,
                 unit: selectedProduct.unit || 'Unit',
                 desiredDeliveryDate: date,
                 status: 'Negotiation'
@@ -216,7 +225,6 @@ const SearchProducts = () => {
                 </div>
             </nav>
 
-            {/* Search Header */}
             <div style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1.5rem 3rem', position: 'sticky', top: 0, zIndex: 10 }}>
                 <div className="container" style={{ maxWidth: '1200px', display: 'flex', gap: '1rem' }}>
                     <div style={{ flex: 1, position: 'relative' }}>
@@ -234,14 +242,12 @@ const SearchProducts = () => {
 
             <main className="container" style={{ padding: '2rem 1rem', maxWidth: '1200px', display: 'grid', gridTemplateColumns: '280px 1fr', gap: '2rem' }}>
 
-                {/* Sidebar Filters */}
                 <aside style={{ height: 'fit-content' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                         <h3 style={{ fontSize: '1.1rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Filter size={18} /> Filters</h3>
                         <button onClick={handleReset} style={{ fontSize: '0.85rem', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Reset All</button>
                     </div>
 
-                    {/* Category Filter */}
                     <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
                         <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '1rem' }}>Category</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -259,7 +265,6 @@ const SearchProducts = () => {
                         </div>
                     </div>
 
-                    {/* Price Range Filter */}
                     <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
                         <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '1rem' }}>Price Range (₹)</h4>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -281,7 +286,6 @@ const SearchProducts = () => {
                         </div>
                     </div>
 
-                    {/* Quantity Filter */}
                     <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
                         <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '1rem' }}>Available Quantity</h4>
                         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -303,7 +307,6 @@ const SearchProducts = () => {
                         </div>
                     </div>
 
-                    {/* Location Filter */}
                     <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
                         <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '1rem' }}>Location</h4>
                         <div style={{ position: 'relative' }}>
@@ -320,9 +323,7 @@ const SearchProducts = () => {
 
                 </aside>
 
-                {/* Results Grid */}
                 <div>
-                    {/* Active Filters & Sort */}
                     <div style={{ marginBottom: '1.5rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                             <div style={{ color: 'var(--text-main)', fontWeight: '600' }}>
@@ -339,7 +340,6 @@ const SearchProducts = () => {
                             </div>
                         </div>
 
-                        {/* Filter Chips */}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                             {filters.categories.map(cat => (
                                 <span key={cat} style={{ background: '#e2e8f0', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -369,7 +369,6 @@ const SearchProducts = () => {
                         </div>
                     </div>
 
-                    {/* Products Grid */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                         {filteredProducts.map((product) => (
                             <div key={product.id} className="card" style={{ padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', cursor: 'pointer' }}>
@@ -395,7 +394,6 @@ const SearchProducts = () => {
 
                                     <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{product.supplier}</p>
 
-                                    {/* Enhanced Supplier Details on Card */}
                                     <div style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                                         <div><span style={{ fontWeight: '600' }}>Company:</span> {product.supplierCompanyName}</div>
                                         <div><span style={{ fontWeight: '600' }}>Contact:</span> {product.supplierContactPerson}</div>
@@ -445,7 +443,6 @@ const SearchProducts = () => {
 
             </main>
 
-            {/* Product Details Modal */}
             {showModal && selectedProduct && (
                 <div style={{
                     position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
@@ -470,10 +467,8 @@ const SearchProducts = () => {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem', fontSize: '0.95rem' }}>
                                         <span style={{ fontWeight: '600' }}>{selectedProduct.supplier}</span>
                                         {selectedProduct.verified && <CheckCircle size={16} fill="#3b82f6" color="white" />}
-
                                     </div>
 
-                                    {/* Supplier Info Section */}
                                     <div style={{ marginTop: '1rem', padding: '1rem', background: '#f0f9ff', borderRadius: '8px', border: '1px solid #bae6fd' }}>
                                         <h4 style={{ fontSize: '0.9rem', fontWeight: '600', color: '#0369a1', marginBottom: '0.5rem' }}>Supplier Details</h4>
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.9rem' }}>
@@ -503,7 +498,34 @@ const SearchProducts = () => {
                                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Location</div>
                                         <div style={{ fontSize: '1rem', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><MapPin size={16} /> {selectedProduct.location}</div>
                                     </div>
+                                </div>
 
+                                <div style={{ marginBottom: '2rem', padding: '1.5rem', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'center' }}>
+                                        <div>
+                                            <label style={{ display: 'block', fontSize: '0.85rem', color: '#166534', fontWeight: '600', marginBottom: '0.5rem' }}>Quantity to Order</label>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <input
+                                                    type="number"
+                                                    value={orderQty}
+                                                    min={selectedProduct.minOrderQty || 1}
+                                                    max={selectedProduct.availableQty}
+                                                    onChange={(e) => setOrderQty(parseFloat(e.target.value) || 0)}
+                                                    style={{ width: '100px', padding: '0.6rem', borderRadius: '6px', border: '1px solid #86efac', fontSize: '1rem', fontWeight: '600' }}
+                                                />
+                                                <span style={{ fontWeight: '500', color: '#166534' }}>{selectedProduct.unit}</span>
+                                            </div>
+                                            {orderQty < selectedProduct.minOrderQty && (
+                                                <div style={{ fontSize: '0.75rem', color: '#dc2626', marginTop: '0.25rem' }}>Min order: {selectedProduct.minOrderQty}</div>
+                                            )}
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: '0.85rem', color: '#166534', fontWeight: '600', marginBottom: '0.5rem' }}>Total Price</div>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#15803d' }}>
+                                                ₹{(selectedProduct.priceValue * (orderQty || 0)).toLocaleString()}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '1rem' }}>
@@ -528,15 +550,15 @@ const SearchProducts = () => {
                                 <h2 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '1.5rem' }}>Propose Counter Offer</h2>
                                 <form onSubmit={handleSendCounter}>
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '0.5rem' }}>Proposed Price (₹)</label>
+                                        <label style={{ block: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '0.5rem' }}>Proposed Price (₹)</label>
                                         <input type="number" defaultValue={selectedProduct.priceValue} style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid var(--border)' }} required />
                                     </div>
                                     <div style={{ marginBottom: '1.5rem' }}>
-                                        <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '0.5rem' }}>Quantity</label>
+                                        <label style={{ block: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '0.5rem' }}>Quantity</label>
                                         <input type="number" defaultValue={selectedProduct.availableQty} style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid var(--border)' }} required />
                                     </div>
                                     <div style={{ marginBottom: '2rem' }}>
-                                        <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '0.5rem' }}>Required Delivery Date</label>
+                                        <label style={{ block: 'block', fontSize: '0.9rem', fontWeight: '500', marginBottom: '0.5rem' }}>Required Delivery Date</label>
                                         <input type="date" style={{ width: '100%', padding: '0.8rem', borderRadius: '6px', border: '1px solid var(--border)' }} required />
                                     </div>
                                     <div style={{ display: 'flex', gap: '1rem' }}>

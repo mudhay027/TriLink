@@ -22,7 +22,7 @@ const BuyerOrders = () => {
                         id: order.id,
                         supplier: order.sellerName || 'Unknown Supplier',
                         product: order.productName || 'Unknown Product',
-                        amount: `₹${order.finalPrice}`,
+                        amount: `₹${order.totalPrice || order.finalPrice}`,
                         quantity: `${order.quantity} ${order.unit}`,
                         date: new Date(order.createdAt).toLocaleDateString(),
                         status: order.status,
@@ -48,10 +48,8 @@ const BuyerOrders = () => {
                                 id: n.id,
                                 supplier: n.sellerName || 'Unknown Supplier',
                                 product: n.productName || 'Unknown Product',
-                                amount: `₹${n.currentOfferAmount || 0}`,
-                                quantity: n.offers && n.offers.length > 0 ?
-                                    n.offers[n.offers.length - 1].message.split('units')[0].replace('Counter Offer:', '').trim() + ' ' + (n.productUnit || 'units')
-                                    : 'N/A',
+                                amount: (n.pricePerUnit > 0 && n.totalPrice > 0) ? `₹${n.pricePerUnit}/${n.unit || n.productUnit || 'unit'} (Total: ₹${n.totalPrice})` : `₹${n.currentOfferAmount || 0}`,
+                                quantity: n.quantity ? `${n.quantity} ${n.productUnit || n.unit || 'units'}` : 'N/A',
                                 date: new Date(n.createdAt).toLocaleDateString(),
                                 status: 'Negotiation Rejected',
                                 actionRequired: false,

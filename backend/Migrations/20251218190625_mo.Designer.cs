@@ -4,6 +4,7 @@ using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(TriLinkDbContext))]
-    partial class TriLinkDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251218190625_mo")]
+    partial class mo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -348,9 +351,6 @@ namespace Backend.Migrations
                     b.Property<DateTime?>("DesiredDeliveryDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<decimal>("PricePerUnit")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
 
@@ -366,9 +366,6 @@ namespace Backend.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("TotalPrice")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Unit")
                         .IsRequired()
@@ -404,9 +401,6 @@ namespace Backend.Migrations
                     b.Property<Guid>("NegotiationId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("PricePerUnit")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<Guid>("ProposerId")
                         .HasColumnType("uniqueidentifier");
 
@@ -416,9 +410,6 @@ namespace Backend.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("TotalPrice")
-                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -445,14 +436,8 @@ namespace Backend.Migrations
                     b.Property<Guid>("NegotiationId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<decimal>("PricePerUnit")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal>("Quantity")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("SellerId")
                         .HasColumnType("uniqueidentifier");
@@ -460,9 +445,6 @@ namespace Backend.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("TotalPrice")
-                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 

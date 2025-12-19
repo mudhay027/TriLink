@@ -23,6 +23,10 @@ const ChatPage = () => {
     const [pricePerUnit, setPricePerUnit] = useState('');
     const [quantity, setQuantity] = useState('');
 
+    // Offer Action Modal State
+    const [showActionModal, setShowActionModal] = useState(false);
+    const [actionOffer, setActionOffer] = useState(null);
+
 
     // Computed total price
     const totalPrice = pricePerUnit && quantity ? parseFloat(pricePerUnit) * parseFloat(quantity) : 0;
@@ -176,13 +180,15 @@ const ChatPage = () => {
                             senderId: offer.senderId || offer.proposerId,
                             senderName: offer.senderId === data.buyerId ? data.buyerCompanyName : data.sellerCompanyName,
                             textMessage: offer.message,
-                            messageType: offer.amount > 0 ? 'Offer' : 'Text',
-                            offer: offer.amount > 0 ? {
+                            messageType: (offer.totalPrice > 0 || offer.amount > 0) ? 'Offer' : 'Text',
+                            offer: (offer.totalPrice > 0 || offer.amount > 0) ? {
                                 id: offer.id,
                                 amount: offer.amount,
+                                pricePerUnit: offer.pricePerUnit || (offer.quantity > 0 ? offer.amount / offer.quantity : 0),
+                                totalPrice: offer.totalPrice || offer.amount,
                                 quantity: offer.quantity || data.quantity,
                                 unit: data.unit,
-                                status: 'Pending'
+                                status: offer.status || 'Pending'
                             } : null,
                             createdAt: offer.createdAt,
                             isRead: true
@@ -368,7 +374,9 @@ const ChatPage = () => {
             console.log('Negotiation ID:', negotiationId);
 
             const requestBody = {
-                amount: parseFloat(pricePerUnit),
+                amount: parseFloat(totalPrice),
+                pricePerUnit: parseFloat(pricePerUnit),
+                totalPrice: parseFloat(totalPrice),
                 message: `Counter Offer: ${quantity} ${threadInfo?.unit || 'units'} at ₹${totalPrice}`,
                 quantity: parseFloat(quantity)
             };
@@ -407,6 +415,46 @@ const ChatPage = () => {
         } catch (error) {
             console.error('Error sending counter offer:', error);
             alert(`Error sending counter offer: ${error.message}`);
+        }
+    };
+
+    const handleUpdateNegotiationStatus = async (status) => {
+        if (!selectedThread || !actionOffer) return;
+
+        try {
+            const response = await fetch(`http://localhost:5081/api/Negotiation/${selectedThread.id}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    status: status,
+                    offerId: actionOffer.id
+                })
+            });
+
+            if (response.ok) {
+                setShowActionModal(false);
+                setActionOffer(null);
+
+                // Refresh messages
+                const currentThreadId = selectedThread.id;
+                setSelectedThread(null);
+                setTimeout(() => {
+                    setSelectedThread(threads.find(t => t.id === currentThreadId));
+                }, 100);
+
+                if (status === 'Accepted') {
+                    alert('Offer accepted! An order has been created.');
+                }
+            } else {
+                const error = await response.text();
+                alert(`Failed to update status: ${error}`);
+            }
+        } catch (error) {
+            console.error('Error updating status:', error);
+            alert('Error updating status');
         }
     };
 
@@ -549,21 +597,23 @@ const ChatPage = () => {
                             </div>
 
                             {/* Toggle Counter Offer Button */}
-                            <button
-                                onClick={() => setShowCounterOfferForm(!showCounterOfferForm)}
-                                style={{
-                                    padding: '0.5rem 1rem',
-                                    background: showCounterOfferForm ? '#25d366' : '#3b82f6',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    fontSize: '0.85rem',
-                                    fontWeight: '500',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {showCounterOfferForm ? 'Hide Offer Form' : 'Make Counter Offer'}
-                            </button>
+                            {selectedThread.status !== 'Accepted' && selectedThread.status !== 'Rejected' && (
+                                <button
+                                    onClick={() => setShowCounterOfferForm(!showCounterOfferForm)}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: showCounterOfferForm ? '#25d366' : '#3b82f6',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '500',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    {showCounterOfferForm ? 'Hide Offer Form' : 'Make Counter Offer'}
+                                </button>
+                            )}
                         </div>
 
                         {/* Messages Area */}
@@ -593,13 +643,28 @@ const ChatPage = () => {
                                             boxShadow: '0 1px 0.5px rgba(0,0,0,0.13)'
                                         }}>
                                             {msg.messageType === 'Offer' && msg.offer && (
-                                                <div style={{
-                                                    background: '#f0f2f5',
-                                                    padding: '0.75rem',
-                                                    borderRadius: '6px',
-                                                    marginBottom: '0.5rem',
-                                                    border: '1px solid #e0e0e0'
-                                                }}>
+                                                <div
+                                                    onClick={() => {
+                                                        const isClosed = selectedThread.status === 'Accepted' || selectedThread.status === 'Rejected';
+                                                        const isActionable = msg.offer.status === 'Pending' || msg.offer.status === 'InNegotiation';
+                                                        if (!isOwn && isActionable && !isClosed) {
+                                                            setActionOffer(msg.offer);
+                                                            setShowActionModal(true);
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        background: '#f0f2f5',
+                                                        padding: '0.75rem',
+                                                        borderRadius: '6px',
+                                                        marginBottom: '0.5rem',
+                                                        border: '1px solid #e0e0e0',
+                                                        cursor: (!isOwn && (msg.offer.status === 'Pending' || msg.offer.status === 'InNegotiation') && selectedThread.status !== 'Accepted' && selectedThread.status !== 'Rejected') ? 'pointer' : 'default',
+                                                        transition: 'background 0.2s',
+                                                        ':hover': {
+                                                            background: (!isOwn && (msg.offer.status === 'Pending' || msg.offer.status === 'InNegotiation') && selectedThread.status !== 'Accepted' && selectedThread.status !== 'Rejected') ? '#e8ebed' : '#f0f2f5'
+                                                        }
+                                                    }}
+                                                >
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                                                         <Package size={16} color="#667781" />
                                                         <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>Price Offer</span>
@@ -608,17 +673,17 @@ const ChatPage = () => {
                                                             borderRadius: '4px',
                                                             fontSize: '0.75rem',
                                                             fontWeight: '500',
-                                                            background: msg.offer.status === 'Pending' ? '#ffeeba' :
+                                                            background: (msg.offer.status === 'Pending' || msg.offer.status === 'InNegotiation') ? '#ffeeba' :
                                                                 msg.offer.status === 'Accepted' ? '#d4edda' : '#f8d7da',
-                                                            color: msg.offer.status === 'Pending' ? '#856404' :
+                                                            color: (msg.offer.status === 'Pending' || msg.offer.status === 'InNegotiation') ? '#856404' :
                                                                 msg.offer.status === 'Accepted' ? '#155724' : '#721c24'
                                                         }}>
                                                             {msg.offer.status}
                                                         </span>
                                                     </div>
                                                     <div style={{ fontSize: '0.9rem' }}>
-                                                        <div>Amount: <strong>₹{msg.offer.amount}/{threadInfo?.unit || 'unit'}</strong></div>
-                                                        <div>Counter Offer: <strong>{msg.offer.quantity} {threadInfo?.unit || 'units'} at ₹{msg.offer.amount * msg.offer.quantity}</strong></div>
+                                                        <div>Unit Price: <strong>₹{(msg.offer.pricePerUnit || 0).toFixed(2)}/{threadInfo?.unit || 'unit'}</strong></div>
+                                                        <div>Total Amount: <strong>₹{(msg.offer.totalPrice || 0).toFixed(2)}</strong> for {msg.offer.quantity} {threadInfo?.unit || 'units'}</div>
                                                         {threadInfo?.desiredDeliveryDate && (
                                                             <div>Expected Delivery: <strong>{new Date(threadInfo.desiredDeliveryDate).toLocaleDateString('en-GB')}</strong></div>
                                                         )}
@@ -822,6 +887,81 @@ const ChatPage = () => {
                     </div>
                 )}
             </div>
+            {/* Action Overlay Modal */}
+            {showActionModal && actionOffer && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 2000
+                }}>
+                    <div style={{
+                        background: 'white',
+                        padding: '2rem',
+                        borderRadius: '12px',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                        width: '400px',
+                        textAlign: 'center'
+                    }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>Accept the offer</h3>
+                        <p style={{ color: '#667781', marginBottom: '1.5rem' }}>
+                            Are you sure you want to accept this offer of ₹{actionOffer.totalPrice.toFixed(2)} for {actionOffer.quantity} {threadInfo?.unit || 'units'}?
+                        </p>
+
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                            <button
+                                onClick={() => handleUpdateNegotiationStatus('Accepted')}
+                                style={{
+                                    padding: '0.75rem 2rem',
+                                    background: '#25d366',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    flex: 1
+                                }}
+                            >
+                                Accept
+                            </button>
+                            <button
+                                onClick={() => handleUpdateNegotiationStatus('Rejected')}
+                                style={{
+                                    padding: '0.75rem 2rem',
+                                    background: '#ef4444',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    flex: 1
+                                }}
+                            >
+                                Reject
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => setShowActionModal(false)}
+                            style={{
+                                marginTop: '1rem',
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#667781',
+                                cursor: 'pointer',
+                                fontSize: '0.9rem'
+                            }}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

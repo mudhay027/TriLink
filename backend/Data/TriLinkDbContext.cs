@@ -94,8 +94,18 @@ namespace Backend.Data
             // Fix Decimal Precision
             modelBuilder.Entity<Product>().Property(p => p.BasePrice).HasColumnType("decimal(18,2)");
             modelBuilder.Entity<Negotiation>().Property(n => n.CurrentOfferAmount).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Negotiation>().Property(n => n.PricePerUnit).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Negotiation>().Property(n => n.TotalPrice).HasColumnType("decimal(18,2)");
+
             modelBuilder.Entity<Offer>().Property(o => o.Amount).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Offer>().Property(o => o.PricePerUnit).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Offer>().Property(o => o.TotalPrice).HasColumnType("decimal(18,2)");
+
             modelBuilder.Entity<Order>().Property(o => o.FinalPrice).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Order>().Property(o => o.PricePerUnit).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Order>().Property(o => o.TotalPrice).HasColumnType("decimal(18,2)");
+            modelBuilder.Entity<Order>().Property(o => o.Quantity).HasColumnType("decimal(18,2)");
+
             modelBuilder.Entity<LogisticsEntry>().Property(l => l.ProposedCost).HasColumnType("decimal(18,2)");
             
             // Configure BuyerLogisticsJob

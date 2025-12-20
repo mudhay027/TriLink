@@ -1,4 +1,4 @@
-# TriLink - Smart Logistics & Supply Chain Management Platform
+# TriLink - Smart Logistics and Supply Chain Management Platform
 
 > A comprehensive B2B platform connecting buyers, suppliers, and logistics providers with AI-powered route optimization and real-time negotiation features.
 
@@ -383,9 +383,11 @@ The project is configured for SQL Server with instance name `MSSQLSERVER01`. If 
 
 #### Option B: Update Connection String
 
-Edit `backend\.env` (we'll create this next):
-```env
-ConnectionStrings__TriLinkConnectionString=Server=YOUR_SERVER_NAME;Database=TriLinkDb;Trusted_Connection=True;TrustServerCertificate=True
+Edit `backend\appsettings.json` and update the ConnectionStrings section:
+```json
+"ConnectionStrings": {
+  "TriLinkConnectionString": "Server=YOUR_SERVER_NAME;Database=TriLinkDb;Trusted_Connection=True;TrustServerCertificate=True"
+}
 ```
 
 ### 2. Environment Variables Setup
@@ -408,14 +410,11 @@ Open `backend\.env` in a text editor and update:
 # Google Maps API Key - Get from: https://console.cloud.google.com/
 GoogleMaps__ApiKey=YOUR_GOOGLE_MAPS_API_KEY_HERE
 
-# JWT Secret Key - Generate a strong random string
+# JWT Secret Key - Generate a strong random string (minimum 32 characters)
 Jwt__Key=YOUR_STRONG_SECRET_KEY_HERE_MINIMUM_32_CHARACTERS
-Jwt__Issuer=https://localhost:7033
-Jwt__Audience=https://localhost:7033
-
-# Database Connection String
-ConnectionStrings__TriLinkConnectionString=Server=localhost\\MSSQLSERVER01;Database=TriLinkDb;Trusted_Connection=True;TrustServerCertificate=True
 ```
+
+**Note:** The database connection string is configured in `backend\appsettings.json`. Only Google Maps API key and JWT secret need to be in `.env` for security.
 
 #### 🗺️ Getting Google Maps API Key
 

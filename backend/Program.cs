@@ -7,9 +7,15 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
-using TriLink.Services;
+using Backend.Services;
+
+// Load environment variables from .env file
+DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Override configuration with environment variables
+builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
 
@@ -64,13 +70,17 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<INegotiationRepository, NegotiationRepository>();
 builder.Services.AddScoped<ILogisticsRepository, LogisticsRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
+builder.Services.AddScoped<IJobHistoryRepository, JobHistoryRepository>();
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 
 // Register services for logistics route planning
+builder.Services.AddHttpClient(); // Required for HTTP calls
+builder.Services.AddScoped<IGoogleMapsService, GoogleMapsService>(); // Google Maps API service
 builder.Services.AddScoped<IRouteService, RouteService>();
 builder.Services.AddScoped<IAIService, AIService>();
-builder.Services.AddHttpClient(); // Required for RouteService to make HTTP calls
+builder.Services.AddScoped<ITransportCostService, TransportCostService>();
 
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 

@@ -4,6 +4,7 @@ using Backend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Migrations
 {
     [DbContext(typeof(TriLinkDbContext))]
-    partial class TriLinkDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251219145339_MergedTriLink")]
+    partial class MergedTriLink
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -31,12 +34,6 @@ namespace Backend.Migrations
                     b.Property<Guid>("BuyerId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTime?>("CompletedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CostBreakdownJson")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -45,12 +42,6 @@ namespace Backend.Migrations
 
                     b.Property<string>("DeliveryTimeWindow")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DestinationCoords")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("DriverExperience")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("DropAddressLine1")
@@ -109,9 +100,6 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("OriginCoords")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("PalletCount")
                         .HasColumnType("int");
 
@@ -144,15 +132,6 @@ namespace Backend.Migrations
 
                     b.Property<string>("PickupTimeSlot")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PlannedDistance")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PlannedDuration")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RouteGeometry")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SenderCompanyName")
@@ -188,9 +167,6 @@ namespace Backend.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("VehicleType")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("Width")
                         .HasColumnType("decimal(18,2)");

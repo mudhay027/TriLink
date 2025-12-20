@@ -1,10 +1,67 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Bell, User, ArrowLeft, Printer, Download } from 'lucide-react';
+import html2pdf from 'html2pdf.js';
 import '../../index.css';
 
 const InvoicePreview = () => {
     const navigate = useNavigate();
+    const { invoiceId } = useParams();
+    const [invoice, setInvoice] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (invoiceId) {
+            fetchInvoice();
+        }
+    }, [invoiceId]);
+
+    const fetchInvoice = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5081/api/invoice/${invoiceId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setInvoice(data);
+            } else {
+                alert('Failed to load invoice');
+                const userId = localStorage.getItem('userId');
+                navigate(`/buyer/orders/${userId}`);
+            }
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching invoice:', error);
+            alert('Error loading invoice');
+            setLoading(false);
+        }
+    };
+
+    const handleDownload = () => {
+        const element = document.querySelector('.invoice-container');
+        const opt = {
+            margin: 0.5,
+            filename: `Invoice-${invoice.invoiceNumber}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    };
+
+    const handlePrint = () => {
+        window.print();
+    };
+
+    if (loading) {
+        return <div style={{ padding: '3rem', textAlign: 'center' }}>Loading invoice...</div>;
+    }
+
+    if (!invoice) {
+        return <div style={{ padding: '3rem', textAlign: 'center' }}>Invoice not found</div>;
+    }
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
@@ -46,57 +103,45 @@ const InvoicePreview = () => {
                         INV-2025-001.pdf
                     </div>
                     <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button className="btn btn-outline" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+                        <button onClick={handlePrint} className="btn btn-outline" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
                             <Printer size={16} /> Print
                         </button>
-                        <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
+                        <button onClick={handleDownload} className="btn btn-primary" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
                             <Download size={16} /> Download
                         </button>
                     </div>
                 </div>
 
                 {/* Invoice Container */}
-                <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '0 0 8px 8px', padding: '4rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                <div className="invoice-container" style={{ background: 'white', border: '1px solid var(--border)', borderRadius: '0 0 8px 8px', padding: '4rem', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
 
                     {/* Header Section */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4rem' }}>
                         <div>
-                            <div style={{ width: '120px', height: '60px', background: '#e2e8f0', borderRadius: '4px', marginBottom: '1rem' }}></div>
-                            <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem' }}>Global Textiles Co.</h3>
+                            <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem' }}>{invoice.supplierCompanyName || invoice.supplierName}</h3>
                             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                                123 Business Street<br />
-                                Mumbai, Maharashtra - 400001<br />
-                                GST: 29XXXXX1234X12X
+                                {invoice.supplierAddress}<br />
+                                {invoice.supplierContactNumber}<br />
+                                {invoice.supplierGSTNumber && <>GST: {invoice.supplierGSTNumber}</>}
                             </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
                             <h2 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '1rem', letterSpacing: '0.05em' }}>INVOICE</h2>
                             <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-                                Invoice No: <span style={{ color: 'var(--text-main)', fontWeight: '500' }}>INV-2025-001</span><br />
-                                Date: <span style={{ color: 'var(--text-main)', fontWeight: '500' }}>15 January 2025</span><br />
-                                Due Date: <span style={{ color: 'var(--text-main)', fontWeight: '500' }}>15 February 2025</span>
+                                Invoice No: <span style={{ color: 'var(--text-main)', fontWeight: '500' }}>{invoice.invoiceNumber}</span><br />
+                                Date: <span style={{ color: 'var(--text-main)', fontWeight: '500' }}>{new Date(invoice.invoiceDate).toLocaleDateString()}</span><br />
+                                Due Date: <span style={{ color: 'var(--text-main)', fontWeight: '500' }}>{new Date(invoice.dueDate).toLocaleDateString()}</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Bill To / Ship To */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
-                        <div style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '1.5rem' }}>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Bill To</div>
-                            <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>TriLink Buyer Corp</h4>
-                            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                                456 Client Avenue<br />
-                                Delhi - 110001<br />
-                                GST: 07XXXXX5678X1ZY
-                            </div>
-                        </div>
-                        <div style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '1.5rem' }}>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Ship To</div>
-                            <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>Same as Billing</h4>
-                            <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                                456 Client Avenue<br />
-                                Delhi - 110001
-                            </div>
+                    {/* Bill To */}
+                    <div style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '1.5rem', marginBottom: '3rem' }}>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Bill To</div>
+                        <h4 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.5rem' }}>{invoice.buyerCompanyName || invoice.buyerName}</h4>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                            {invoice.buyerAddress}<br />
+                            {invoice.buyerGSTNumber && <>GST: {invoice.buyerGSTNumber}</>}
                         </div>
                     </div>
 
@@ -106,32 +151,20 @@ const InvoicePreview = () => {
                             <thead>
                                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
                                     <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>Description</th>
-                                    <th style={{ padding: '1rem', textAlign: 'center', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>HSN/SAC</th>
-                                    <th style={{ padding: '1rem', textAlign: 'center', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>Qty</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>Rate</th>
+                                    <th style={{ padding: '1rem', textAlign: 'center', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>Quantity</th>
+                                    <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>Unit Price</th>
                                     <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-main)' }}>Amount</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr style={{ borderBottom: '1px solid var(--border)' }}>
                                     <td style={{ padding: '1.5rem 1rem' }}>
-                                        <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>Premium Cotton T-Shirts</div>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>SKU: TCT-2025-001, Size: M, L, XL</div>
+                                        <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>{invoice.productName}</div>
+                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Order: {invoice.orderId}</div>
                                     </td>
-                                    <td style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>6109</td>
-                                    <td style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>5,000</td>
-                                    <td style={{ padding: '1.5rem 1rem', textAlign: 'right' }}>₹12.00</td>
-                                    <td style={{ padding: '1.5rem 1rem', textAlign: 'right', fontWeight: '500' }}>₹60,000.00</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                                    <td style={{ padding: '1.5rem 1rem' }}>
-                                        <div style={{ fontWeight: '500', marginBottom: '0.25rem' }}>Express Freight Charges</div>
-                                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Delivery to Delhi</div>
-                                    </td>
-                                    <td style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>9965</td>
-                                    <td style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>1</td>
-                                    <td style={{ padding: '1.5rem 1rem', textAlign: 'right' }}>₹2,500.00</td>
-                                    <td style={{ padding: '1.5rem 1rem', textAlign: 'right', fontWeight: '500' }}>₹2,500.00</td>
+                                    <td style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>{invoice.quantity} {invoice.unit}</td>
+                                    <td style={{ padding: '1.5rem 1rem', textAlign: 'right' }}>₹{(invoice.subTotal / invoice.quantity).toFixed(2)}</td>
+                                    <td style={{ padding: '1.5rem 1rem', textAlign: 'right', fontWeight: '500' }}>₹{invoice.subTotal.toFixed(2)}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -142,36 +175,32 @@ const InvoicePreview = () => {
                         <div style={{ width: '300px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', fontSize: '0.9rem' }}>
                                 <span style={{ color: 'var(--text-muted)' }}>Subtotal:</span>
-                                <span style={{ fontWeight: '500' }}>₹62,500.00</span>
+                                <span style={{ fontWeight: '500' }}>₹{invoice.subTotal.toFixed(2)}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', fontSize: '0.9rem' }}>
-                                <span style={{ color: 'var(--text-muted)' }}>CGST (9%):</span>
-                                <span style={{ fontWeight: '500' }}>₹5,625.00</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', fontSize: '0.9rem' }}>
-                                <span style={{ color: 'var(--text-muted)' }}>SGST (9%):</span>
-                                <span style={{ fontWeight: '500' }}>₹5,625.00</span>
+                                <span style={{ color: 'var(--text-muted)' }}>GST ({invoice.taxRate}%):</span>
+                                <span style={{ fontWeight: '500' }}>₹{invoice.taxAmount.toFixed(2)}</span>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0', marginTop: '0.5rem', borderTop: '1px solid var(--border)', background: '#f8fafc', borderRadius: '4px', paddingLeft: '1rem', paddingRight: '1rem' }}>
                                 <span style={{ fontWeight: '600' }}>Total Amount:</span>
-                                <span style={{ fontWeight: '700', fontSize: '1.1rem' }}>₹73,750.00</span>
+                                <span style={{ fontWeight: '700', fontSize: '1.1rem' }}>₹{invoice.totalAmount.toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Footer */}
-                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '2rem' }}>
-                        <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem' }}>Terms & Conditions:</h4>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-                            1. Payment due within 30 days. Please include invoice number with payment.<br />
-                            2. Goods once sold will not be taken back.<br />
-                            3. Interest @ 18% p.a. will be charged on delayed payments.
-                        </p>
-                    </div>
+                    {/* Notes/Terms */}
+                    {invoice.notes && (
+                        <div style={{ borderTop: '1px solid var(--border)', paddingTop: '2rem' }}>
+                            <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem' }}>Terms & Conditions:</h4>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                                {invoice.notes}
+                            </p>
+                        </div>
+                    )}
 
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     );
 };
 

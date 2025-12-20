@@ -1,4 +1,4 @@
-namespace TriLink.Services
+namespace Backend.Services
 {
     public interface IAIService
     {

@@ -59,10 +59,25 @@ namespace Backend.Models.Domain
         // Job Status & Metadata
         public string Status { get; set; } = "Active"; // Active, Completed, Cancelled
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
+        
+        // Route Planning Data (cached to avoid re-calculating)
+        public string? PlannedDistance { get; set; }
+        public string? PlannedDuration { get; set; }
+        public string? DriverExperience { get; set; }
+        public string? VehicleType { get; set; }
+        public string? RouteGeometry { get; set; }
+        public string? OriginCoords { get; set; }
+        public string? DestinationCoords { get; set; }
+        
+        // Cost Breakdown (stored as JSON string)
+        public string? CostBreakdownJson { get; set; }
+        
+        // Job Tracking
+        public DateTime? CompletedDate { get; set; }
 
         // Navigation Property
         public ICollection<BuyerLogisticsJobQuote> Quotes { get; set; }
-        public DateTime? UpdatedAt { get; set; }
         
         // Computed properties for display
         public string PickupLocation => $"{PickupCity}, {PickupState}";

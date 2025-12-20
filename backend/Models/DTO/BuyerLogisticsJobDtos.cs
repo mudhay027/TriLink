@@ -109,6 +109,16 @@ namespace Backend.Models.DTO
         public string Status { get; set; }
         public DateTime CreatedAt { get; set; }
         
+        // Route Planning Data
+        public string? PlannedDistance { get; set; }
+        public string? PlannedDuration { get; set; }
+        public string? DriverExperience { get; set; }
+        public string? VehicleType { get; set; }
+        public string? RouteGeometry { get; set; }
+        public string? OriginCoords { get; set; }
+        public string? DestinationCoords { get; set; }
+        public string? CostBreakdownJson { get; set; }
+        
         // Computed properties
         public string PickupLocation { get; set; }
         public string DropLocation { get; set; }

@@ -74,7 +74,7 @@ const Login = () => {
                     <a href="#" style={{ color: 'var(--text-muted)' }}>Features</a>
                     <a href="#" style={{ color: 'var(--text-muted)' }}>Contact</a>
                     <button className="btn btn-primary" style={{ padding: '0.5rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem' }}>
-                        Sign in
+                        Login
                     </button>
                 </div>
             </header>
@@ -114,7 +114,7 @@ const Login = () => {
 
                     {/* Right Side: Login Form */}
                     <div style={{ padding: '2rem' }}>
-                        <h2 style={{ fontSize: '2rem', fontWeight: '600', marginBottom: '0.5rem' }}>Sign in to your account</h2>
+                        <h2 style={{ fontSize: '2rem', fontWeight: '600', marginBottom: '0.5rem' }}>Login to your account</h2>
                         <p style={{ color: 'var(--text-muted)', marginBottom: '2.5rem', fontSize: '0.95rem' }}>
                             Enter your details to proceed
                         </p>
@@ -155,7 +155,7 @@ const Login = () => {
                             className="btn btn-primary"
                             style={{ width: '100%', padding: '1rem' }}
                         >
-                            {loading ? 'Signing in...' : 'Sign in'}
+                            {loading ? 'Logging in...' : 'Login'}
                         </button>
                         {error && <p style={{ color: 'red', textAlign: 'center', marginTop: '1rem' }}>{error}</p>}
 

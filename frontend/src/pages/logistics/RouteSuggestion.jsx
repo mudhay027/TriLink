@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Bell, User, MapPin, Clock, Truck, Zap, Map, CheckCircle } from 'lucide-react';
+import { Bell, User, MapPin, Clock, Truck, Zap, Map, CheckCircle, Maximize2, X } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import polyline from '@mapbox/polyline';
@@ -24,18 +24,49 @@ const RouteSuggestion = () => {
     const [jobData, setJobData] = useState(null);
     const [suggestedRouteData, setSuggestedRouteData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [showMapFullscreen, setShowMapFullscreen] = useState(false);
 
+    // Fetch job details and check for cached route data
     useEffect(() => {
         const fetchJobDetails = async () => {
             try {
                 const token = localStorage.getItem('token');
-                // The ID from params is the Job ID (UUID)
-                const response = await fetch(`http://localhost:5081/api/BuyerLogisticsJob/${id}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
+                const response = await fetch(`http://localhost:5081/api/BuyerLogisticsJob/${id}`, { headers });
                 if (response.ok) {
                     const data = await response.json();
+                    // Set raw job data first
+                    setJobData(data);
+
+                    // Check if route data is already cached in database
+                    if (data.routeGeometry && data.plannedDistance && data.plannedDuration) {
+                        console.log('Loading cached route data from database...');
+
+                        // Parse coordinates from JSON strings
+                        const originCoords = data.originCoords ? JSON.parse(data.originCoords) : null;
+                        const destinationCoords = data.destinationCoords ? JSON.parse(data.destinationCoords) : null;
+                        const costBreakdown = data.costBreakdownJson ? JSON.parse(data.costBreakdownJson) : null;
+
+                        console.log('Cached cost breakdown:', costBreakdown);
+
+                        // Set cached route data
+                        setSuggestedRouteData({
+                            distance: data.plannedDistance,
+                            duration: data.plannedDuration,
+                            driverExperience: data.driverExperience || 'Regional Logistics Driver',
+                            vehicleType: data.vehicleType || 'Light Commercial Vehicle',
+                            routeGeometry: data.routeGeometry,
+                            originCoords: originCoords,
+                            destinationCoords: destinationCoords,
+                            costBreakdown: costBreakdown,
+                            fuelCost: costBreakdown?.totalCost || costBreakdown?.TotalCost
+                                ? `₹${(costBreakdown.totalCost || costBreakdown.TotalCost).toLocaleString()}`
+                                : 'N/A'
+                        });
+                        setShowComparison(true);
+                        setSelectedRoute('optimal');
+                    }
 
                     // Format scheduled time - include time slot if available
                     let scheduledTimeDisplay = new Date(data.pickupDate).toLocaleDateString();
@@ -77,15 +108,22 @@ const RouteSuggestion = () => {
     const handleSuggest = async () => {
         setIsLoading(true);
         try {
-            // Use real origin and destination cities from job data
+            // Use real origin and destination cities from job data with cargo details
             const response = await fetch('http://localhost:5081/api/Logistics/suggest-route', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    origin: jobData.pickupLocation, // Use full address for better accuracy
+                    origin: jobData.pickupLocation,
                     destination: jobData.deliveryLocation,
-                    originCity: jobData.origin, // Backup: Use City name if full address fails
-                    destinationCity: jobData.destination // Backup
+                    originCity: jobData.origin,
+                    destinationCity: jobData.destination,
+                    // Pass cargo details for accurate cost calculation
+                    totalWeight: jobData.totalWeight || 1000,
+                    length: jobData.length,
+                    width: jobData.width,
+                    height: jobData.height,
+                    isFragile: jobData.isFragile || false,
+                    isHighValue: jobData.isHighValue || false
                 })
             });
             if (!response.ok) {
@@ -96,6 +134,28 @@ const RouteSuggestion = () => {
             setSuggestedRouteData(data);
             setShowComparison(true);
             setSelectedRoute('optimal'); // Auto-select optimal
+
+            // Save route data to database to avoid re-calculating
+            try {
+                await fetch(`http://localhost:5081/api/BuyerLogisticsJob/${id}/save-route`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        distance: data.distance,
+                        duration: data.duration,
+                        driverExperience: data.driverExperience,
+                        vehicleType: data.vehicleType,
+                        routeGeometry: data.routeGeometry,
+                        originCoords: data.originCoords,
+                        destinationCoords: data.destinationCoords,
+                        costBreakdown: data.costBreakdown
+                    })
+                });
+                console.log('Route data saved successfully to database');
+            } catch (saveError) {
+                console.error('Failed to save route data:', saveError);
+                // Don't block user flow if save fails
+            }
         } catch (error) {
             console.error("Failed to fetch route", error);
             alert(`Failed to fetch route suggestions: ${error.message}`);
@@ -107,7 +167,14 @@ const RouteSuggestion = () => {
     const handleConfirm = () => {
         if (selectedRoute) {
             const userId = localStorage.getItem('userId');
-            navigate(`/logistics/route-summary/${userId}`, { state: { jobData, selectedRoute, suggestedRouteData } });
+            console.log('Passing suggestedRouteData to RouteSummary:', suggestedRouteData);
+            navigate(`/logistics/route-summary/${userId}`, {
+                state: {
+                    jobData,
+                    selectedRoute,
+                    suggestedRouteData
+                }
+            });
         }
     };
 
@@ -235,6 +302,8 @@ const RouteSuggestion = () => {
                                     routeGeometry={suggestedRouteData?.routeGeometry}
                                     originCoords={suggestedRouteData?.originCoords}
                                     destinationCoords={suggestedRouteData?.destinationCoords}
+                                    costBreakdown={suggestedRouteData?.costBreakdown}
+                                    setShowMapFullscreen={setShowMapFullscreen}
                                 />
                             </div>
                         </div>
@@ -299,6 +368,93 @@ const RouteSuggestion = () => {
                     </div>
                 )}
             </main>
+
+            {/* Fullscreen Map Modal */}
+            {showMapFullscreen && suggestedRouteData && (
+                <div style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    zIndex: 9999,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '2rem'
+                }}>
+                    <div style={{
+                        width: '100%',
+                        height: '100%',
+                        maxWidth: '1400px',
+                        maxHeight: '900px',
+                        background: 'white',
+                        borderRadius: '12px',
+                        overflow: 'hidden',
+                        position: 'relative'
+                    }}>
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowMapFullscreen(false)}
+                            style={{
+                                position: 'absolute',
+                                top: '15px',
+                                right: '15px',
+                                zIndex: 10000,
+                                background: 'white',
+                                border: 'none',
+                                borderRadius: '50%',
+                                width: '40px',
+                                height: '40px',
+                                cursor: 'pointer',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                            title="Close"
+                        >
+                            <X size={24} color="#374151" />
+                        </button>
+
+                        {/* Fullscreen Map */}
+                        {(() => {
+                            let positions = [];
+                            const routeGeometry = suggestedRouteData?.routeGeometry;
+                            const originCoords = suggestedRouteData?.originCoords;
+                            const destinationCoords = suggestedRouteData?.destinationCoords;
+
+                            if (routeGeometry) {
+                                try {
+                                    positions = polyline.decode(routeGeometry);
+                                } catch (e) {
+                                    console.error("Error decoding polyline", e);
+                                }
+                            } else if (originCoords && destinationCoords) {
+                                positions = [originCoords, destinationCoords];
+                            }
+
+                            return positions.length > 0 ? (
+                                <MapContainer center={positions[0]} zoom={7} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
+                                    <TileLayer
+                                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                    />
+                                    <Polyline positions={positions} color="#2563eb" weight={4} />
+                                    {originCoords && <Marker position={originCoords}></Marker>}
+                                    {destinationCoords && <Marker position={destinationCoords}></Marker>}
+                                </MapContainer>
+                            ) : (
+                                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Map size={64} color="#cbd5e1" />
+                                    <span style={{ marginLeft: '1rem', color: '#94a3b8' }}>No map data available</span>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -312,7 +468,7 @@ const StatPlaceholder = ({ label, icon }) => (
     </div>
 );
 
-const RouteCard = ({ title, tag, tagColor, selected, onClick, stats, details, routeGeometry, originCoords, destinationCoords }) => {
+const RouteCard = ({ title, tag, tagColor, selected, onClick, stats, details, routeGeometry, originCoords, destinationCoords, costBreakdown, setShowMapFullscreen }) => {
     let positions = [];
     let isFallback = false;
 
@@ -356,7 +512,34 @@ const RouteCard = ({ title, tag, tagColor, selected, onClick, stats, details, ro
             </div>
 
             {/* Map Preview */}
-            <div style={{ height: '300px', background: '#f1f5f9', borderRadius: '8px', marginBottom: '1rem', overflow: 'hidden' }}>
+            <div style={{ height: '300px', background: '#f1f5f9', borderRadius: '8px', marginBottom: '1rem', overflow: 'hidden', position: 'relative' }}>
+                {/* Maximize Button */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onClick();
+                        setTimeout(() => setShowMapFullscreen(true), 50);
+                    }}
+                    style={{
+                        position: 'absolute',
+                        top: '10px',
+                        right: '10px',
+                        zIndex: 1000,
+                        background: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.5rem',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}
+                    title="View fullscreen map"
+                >
+                    <Maximize2 size={18} color="#374151" />
+                </button>
+
                 {positions.length > 0 ? (
                     <MapContainer center={positions[0]} zoom={6} scrollWheelZoom={false} style={{ height: '100%', width: '100%' }}>
                         <TileLayer
@@ -385,7 +568,7 @@ const RouteCard = ({ title, tag, tagColor, selected, onClick, stats, details, ro
                     <div style={{ fontWeight: '500' }}>{stats.time}</div>
                 </div>
                 <div>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Fuel Cost</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Total Cost</span>
                     <div style={{ fontWeight: '500' }}>{stats.cost}</div>
                 </div>
             </div>
@@ -400,6 +583,56 @@ const RouteCard = ({ title, tag, tagColor, selected, onClick, stats, details, ro
                     <div style={{ fontWeight: '500' }}>{stats.vehicle}</div>
                 </div>
             </div>
+
+            {/* Cost Breakdown Section */}
+            {costBreakdown && (
+                <div style={{
+                    marginTop: '1rem',
+                    padding: '1rem',
+                    background: '#f8fafc',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem'
+                }}>
+                    <div style={{ fontWeight: '600', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Truck size={16} /> Cost Breakdown
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.4rem' }}>
+                        <div style={{ color: 'var(--text-muted)' }}>Fuel ({costBreakdown.fuelLiters || costBreakdown.FuelLiters || 0}L)</div>
+                        <div style={{ textAlign: 'right', fontWeight: '500' }}>₹{(costBreakdown.fuelCost || costBreakdown.FuelCost || 0).toLocaleString()}</div>
+
+                        <div style={{ color: 'var(--text-muted)' }}>Driver Wages</div>
+                        <div style={{ textAlign: 'right', fontWeight: '500' }}>₹{(costBreakdown.driverCost || costBreakdown.DriverCost || 0).toLocaleString()}</div>
+
+                        <div style={{ color: 'var(--text-muted)' }}>Toll Charges</div>
+                        <div style={{ textAlign: 'right', fontWeight: '500' }}>₹{(costBreakdown.tollCost || costBreakdown.TollCost || 0).toLocaleString()}</div>
+
+                        <div style={{ color: 'var(--text-muted)' }}>Maintenance</div>
+                        <div style={{ textAlign: 'right', fontWeight: '500' }}>₹{(costBreakdown.maintenanceCost || costBreakdown.MaintenanceCost || 0).toLocaleString()}</div>
+
+                        <div style={{ color: 'var(--text-muted)' }}>Insurance</div>
+                        <div style={{ textAlign: 'right', fontWeight: '500' }}>₹{(costBreakdown.insuranceCost || costBreakdown.InsuranceCost || 0).toLocaleString()}</div>
+
+                        <div style={{ color: 'var(--text-muted)' }}>Overhead</div>
+                        <div style={{ textAlign: 'right', fontWeight: '500' }}>₹{(costBreakdown.overheadCost || costBreakdown.OverheadCost || 0).toLocaleString()}</div>
+                    </div>
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        marginTop: '0.75rem',
+                        paddingTop: '0.75rem',
+                        borderTop: '1px solid #e2e8f0',
+                        fontWeight: '600'
+                    }}>
+                        <span>Total</span>
+                        <span style={{ color: '#10b981' }}>₹{(costBreakdown.totalCost || costBreakdown.TotalCost || 0).toLocaleString()}</span>
+                    </div>
+                    {(costBreakdown.chargeableWeightKg || costBreakdown.ChargeableWeightKg) > 0 && (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            Chargeable Weight: {(costBreakdown.chargeableWeightKg || costBreakdown.ChargeableWeightKg || 0).toLocaleString()} kg | Terrain: {costBreakdown.terrainType || costBreakdown.TerrainType || 'N/A'}
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)', fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 {details}

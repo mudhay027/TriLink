@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace TriLink.DTOs
+namespace Backend.Models.DTO
 {
     public class CreateLogisticsJobDto
     {

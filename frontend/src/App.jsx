@@ -34,6 +34,8 @@ import LogisticsProfile from './pages/logistics/LogisticsProfile';
 import TruckRecommendation from './pages/logistics/TruckRecommendation';
 import DriverMatching from './pages/logistics/DriverMatching';
 import ChatPage from './pages/chat/ChatPage';
+import SupplierInvoiceCreation from './pages/supplier/SupplierInvoiceCreation';
+import SupplierInvoicePreview from './pages/supplier/SupplierInvoicePreview';
 
 
 function App() {
@@ -58,6 +60,9 @@ function App() {
         <Route path="/supplier/logistics-job-management/:userId" element={<SupplierLogisticsJobManagement />} />
         <Route path="/supplier/negotiation/:userId" element={<SupplierNegotiation />} />
         <Route path="/negotiation/offer-summary/:userId" element={<OfferSummary />} />
+        <Route path="/supplier/invoice/create/:orderId" element={<SupplierInvoiceCreation />} />
+        <Route path="/supplier/invoice/edit/:invoiceId" element={<SupplierInvoiceCreation />} />
+        <Route path="/supplier/invoice/preview/:invoiceId" element={<SupplierInvoicePreview />} />
 
         {/* Buyer Routes */}
         {/* Buyer Routes */}
@@ -68,7 +73,8 @@ function App() {
         <Route path="/buyer/active-negotiations/:userId" element={<BuyerActiveNegotiations />} />
         <Route path="/buyer/negotiation/:userId" element={<Negotiation />} />
         <Route path="/buyer/offer-summary/:userId" element={<BuyerOfferSummary />} />
-        <Route path="/buyer/invoice-preview/:userId" element={<InvoicePreview />} />
+        <Route path="/buyer/invoice-preview/:userId/:invoiceId" element={<InvoicePreview />} />
+        <Route path="/buyer/invoice-preview/:userId" element={<InvoicePreview />} /> {/* Legacy fallback */}
         <Route path="/buyer/orders/:userId" element={<BuyerOrders />} />
         <Route path="/buyer/orders" element={<BuyerOrders />} /> {/* Fallback */}
         <Route path="/buyer/logistics-jobs/:userId" element={<BuyerLogisticsJobCreation />} />

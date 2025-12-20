@@ -29,7 +29,7 @@ const RoleSelection = () => {
                         className="btn btn-outline"
                         style={{ padding: '0.5rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem' }}
                     >
-                        Sign in
+                        Login
                     </button>
                 </div>
             </header>

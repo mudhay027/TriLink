@@ -314,5 +314,32 @@ namespace Backend.Controllers
 
             return Ok(new { message = "Job status updated successfully" });
         }
+
+        //  POST: api/BuyerLogisticsJob/{id}/save-route
+        [HttpPost("{id}/save-route")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SaveRouteData(Guid id, [FromBody] RouteResponseDto routeData)
+        {
+            var job = await _context.BuyerLogisticsJobs.FindAsync(id);
+            if (job == null) return NotFound("Job not found");
+
+            // Save route planning data
+            job.PlannedDistance = routeData.Distance;
+            job.PlannedDuration = routeData.Duration;
+            job.DriverExperience = routeData.DriverExperience;
+            job.VehicleType = routeData.VehicleType;
+            job.RouteGeometry = routeData.RouteGeometry;
+            job.OriginCoords = routeData.OriginCoords != null ? 
+                System.Text.Json.JsonSerializer.Serialize(routeData.OriginCoords) : null;
+            job.DestinationCoords = routeData.DestinationCoords != null ? 
+                System.Text.Json.JsonSerializer.Serialize(routeData.DestinationCoords) : null;
+            job.CostBreakdownJson = routeData.CostBreakdown != null ? 
+                System.Text.Json.JsonSerializer.Serialize(routeData.CostBreakdown) : null;
+            job.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Route data saved successfully" });
+        }
     }
 }

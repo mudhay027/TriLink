@@ -121,7 +121,7 @@ const Registration = () => {
                     <a href="#" style={{ color: 'var(--text-muted)' }}>Features</a>
                     <a href="#" style={{ color: 'var(--text-muted)' }}>Contact</a>
                     <button onClick={() => navigate('/login')} className="btn btn-outline" style={{ padding: '0.5rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem' }}>
-                        Sign in
+                        Login
                     </button>
                 </div>
             </header>
@@ -303,7 +303,7 @@ const Step1Account = ({ formData, handleChange, onNext, navigate }) => (
         </button>
 
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-            Already have an account? <span onClick={() => navigate('/login')} style={{ color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Sign in</span>
+            Already have an account? <span onClick={() => navigate('/login')} style={{ color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Login</span>
         </p>
     </div>
 );

@@ -99,11 +99,14 @@ namespace Backend.Controllers
                     PickupState = jobHistory.Job.PickupState,
                     DropCity = jobHistory.Job.DropCity,
                     DropState = jobHistory.Job.DropState,
-                    PlannedDistance = jobHistory.PlannedDistance,
-                    PlannedDuration = jobHistory.PlannedDuration,
-                    DriverExperience = jobHistory.DriverExperience,
-                    VehicleType = jobHistory.VehicleType,
-                    RoutePolyline = "" // jobHistory.Job.RouteGeometry doesn't exist on BuyerLogisticsJob
+                    PlannedDistance = jobHistory.PlannedDistance ?? jobHistory.Job.PlannedDistance ?? "N/A",
+                    PlannedDuration = jobHistory.PlannedDuration ?? jobHistory.Job.PlannedDuration ?? "N/A",
+                    DriverExperience = jobHistory.DriverExperience ?? jobHistory.Job.DriverExperience ?? "N/A",
+                    VehicleType = jobHistory.VehicleType ?? jobHistory.Job.VehicleType ?? "N/A",
+                    RoutePolyline = jobHistory.Job.RouteGeometry ?? "",
+                    OriginCoords = jobHistory.Job.OriginCoords ?? "",
+                    DestinationCoords = jobHistory.Job.DestinationCoords ?? "",
+                    TotalPrice = ExtractTotalPrice(jobHistory.Job.CostBreakdownJson)
                 };
 
                 return Ok(routeDto);
@@ -112,6 +115,31 @@ namespace Backend.Controllers
             {
                 Console.WriteLine($"Error fetching job route: {ex.Message}");
                 return StatusCode(500, "Error fetching job route");
+            }
+        }
+
+        private string ExtractTotalPrice(string json)
+        {
+            if (string.IsNullOrEmpty(json)) return "N/A";
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(json);
+                // Check for both camelCase and PascalCase versions
+                if (doc.RootElement.TryGetProperty("totalCost", out var priceElement) ||
+                    doc.RootElement.TryGetProperty("TotalCost", out priceElement))
+                {
+                    // Format as currency
+                    if (priceElement.ValueKind == System.Text.Json.JsonValueKind.Number)
+                    {
+                        return $"₹{priceElement.GetDecimal():N0}";
+                    }
+                    return priceElement.ToString();
+                }
+                return "N/A";
+            }
+            catch
+            {
+                return "N/A";
             }
         }
     }

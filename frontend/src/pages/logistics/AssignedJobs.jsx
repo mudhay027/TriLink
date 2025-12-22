@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, User, ChevronLeft, MapPin, Truck, Package, Calendar, Eye, X } from 'lucide-react';
+import { Bell, User, ChevronLeft, MapPin, Truck, Package, Calendar, Eye, X, CheckCircle } from 'lucide-react';
 import '../../index.css';
 
 const AssignedJobs = () => {
@@ -22,33 +22,6 @@ const AssignedJobs = () => {
             if (response.ok) {
                 const data = await response.json();
                 setAssignedJobs(data);
-
-                // Auto-save any Delivered/Completed jobs to Job History
-                const existingHistory = JSON.parse(localStorage.getItem('jobHistory') || '[]');
-                const deliveredJobs = data.filter(job => job.status === 'Delivered' || job.status === 'Completed');
-
-                deliveredJobs.forEach(job => {
-                    console.log('[DEBUG] Job data for history:', job);
-                    console.log('[DEBUG] pickupCity:', job.pickupCity, '| dropCity:', job.dropCity);
-                    const jobExists = existingHistory.some(h => h.id === job.id);
-                    if (!jobExists) {
-                        const historyEntry = {
-                            id: job.id,
-                            origin: job.pickupCity || 'Unknown',
-                            destination: job.dropCity || 'Unknown',
-                            status: job.status,
-                            date: new Date().toLocaleDateString(),
-                            driverExp: '-',
-                            vehicleType: '-',
-                            distance: 'N/A'
-                        };
-                        existingHistory.push(historyEntry);
-                    }
-                });
-
-                if (deliveredJobs.length > 0) {
-                    localStorage.setItem('jobHistory', JSON.stringify(existingHistory));
-                }
             }
         } catch (error) {
             console.error(error);
@@ -70,30 +43,7 @@ const AssignedJobs = () => {
             });
 
             if (response.ok) {
-                // If status is Delivered, add to Job History
-                if (newStatus === 'Delivered') {
-                    const jobToSave = assignedJobs.find(j => j.id === jobId);
-                    if (jobToSave) {
-                        const historyEntry = {
-                            id: jobToSave.id,
-                            origin: jobToSave.pickupCity || 'Unknown',
-                            destination: jobToSave.dropCity || 'Unknown',
-                            status: 'Delivered',
-                            date: new Date().toLocaleDateString(),
-                            driverExp: '-',
-                            vehicleType: '-',
-                            distance: 'N/A'
-                        };
-
-                        const existingHistory = JSON.parse(localStorage.getItem('jobHistory') || '[]');
-                        const jobExists = existingHistory.some(h => h.id === jobToSave.id);
-                        if (!jobExists) {
-                            existingHistory.push(historyEntry);
-                            localStorage.setItem('jobHistory', JSON.stringify(existingHistory));
-                        }
-                    }
-                }
-
+                // If status is Delivered, backend auto-creates Job History entry
                 fetchAssignedJobs(); // Refresh list
                 if (selectedJob && selectedJob.id === jobId) {
                     setSelectedJob({ ...selectedJob, status: newStatus });
@@ -246,7 +196,10 @@ const AssignedJobs = () => {
             {/* Header */}
             <header style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)', cursor: 'pointer' }} onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }}>TriLink</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }}>
+                        <img src="/trilink_logo.jpg" alt="TriLink" style={{ height: '36px' }} />
+                        <span style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</span>
+                    </div>
                     <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>
                         <span onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Dashboard</span>
                         <span onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/available-jobs/${userId}`); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Search Jobs</span>
@@ -312,28 +265,55 @@ const AssignedJobs = () => {
                                         </td>
                                         <td style={{ padding: '1rem 1.5rem', color: 'var(--text-muted)' }}>{new Date(job.pickupDate).toLocaleDateString()}</td>
                                         <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    const userId = localStorage.getItem('userId');
-                                                    navigate(`/logistics/route-suggestion/${userId}/${job.id}`);
-                                                }}
-                                                className="btn"
-                                                style={{
-                                                    fontSize: '0.75rem',
-                                                    padding: '0.4rem 0.8rem',
-                                                    background: 'white',
-                                                    border: '1px solid #10b981',
-                                                    color: '#10b981',
-                                                    borderRadius: '6px',
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.25rem',
-                                                    cursor: 'pointer'
-                                                }}
-                                            >
-                                                <MapPin size={12} /> Finalize Route
-                                            </button>
+                                            {job.status === 'In Progress' || (job.plannedDistance && job.plannedDistance !== 'N/A') ? (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        // Navigate to RouteSummary or just show it's done
+                                                        // Currently navigating to route suggestion might be redundant if already finalized
+                                                        // But user might want to View it.
+                                                        alert("Route already finalized! You can view it in the dashboard history after delivery, or re-plan if needed.");
+                                                    }}
+                                                    className="btn"
+                                                    style={{
+                                                        fontSize: '0.75rem',
+                                                        padding: '0.4rem 0.8rem',
+                                                        background: '#ecfdf5',
+                                                        border: '1px solid #10b981',
+                                                        color: '#059669',
+                                                        borderRadius: '6px',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.25rem',
+                                                        cursor: 'default'
+                                                    }}
+                                                >
+                                                    <CheckCircle size={12} /> Route Finalized
+                                                </button>
+                                            ) : (
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const userId = localStorage.getItem('userId');
+                                                        navigate(`/logistics/route-suggestion/${userId}/${job.id}`);
+                                                    }}
+                                                    className="btn"
+                                                    style={{
+                                                        fontSize: '0.75rem',
+                                                        padding: '0.4rem 0.8rem',
+                                                        background: 'white',
+                                                        border: '1px solid #10b981',
+                                                        color: '#10b981',
+                                                        borderRadius: '6px',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '0.25rem',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    <MapPin size={12} /> Finalize Route
+                                                </button>
+                                            )}
                                         </td>
                                         <td style={{ padding: '1rem 1.5rem', textAlign: 'center' }}>
                                             <button

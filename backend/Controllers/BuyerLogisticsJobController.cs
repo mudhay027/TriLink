@@ -5,6 +5,7 @@ using AutoMapper;
 using Backend.Data;
 using Backend.Models.Domain;
 using Backend.Models.DTO;
+using Backend.Repositories;
 using System.Security.Claims;
 
 namespace Backend.Controllers
@@ -16,11 +17,13 @@ namespace Backend.Controllers
     {
         private readonly TriLinkDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IJobHistoryRepository _jobHistoryRepository;
 
-        public BuyerLogisticsJobController(TriLinkDbContext context, IMapper mapper)
+        public BuyerLogisticsJobController(TriLinkDbContext context, IMapper mapper, IJobHistoryRepository jobHistoryRepository)
         {
             _context = context;
             _mapper = mapper;
+            _jobHistoryRepository = jobHistoryRepository;
         }
 
 
@@ -310,6 +313,33 @@ namespace Backend.Controllers
             }
 
             job.Status = newStatus;
+            
+            // If status is Delivered, set completion date and create JobHistory entry
+            if (newStatus == "Delivered")
+            {
+                job.CompletedDate = DateTime.UtcNow;
+                
+                // Check if JobHistory already exists for this job
+                var historyExists = await _jobHistoryRepository.ExistsAsync(job.Id);
+                if (!historyExists)
+                {
+                    var jobHistory = new JobHistory
+                    {
+                        Id = Guid.NewGuid(),
+                        JobId = job.Id,
+                        LogisticsProviderId = userId,
+                        PlannedDistance = job.PlannedDistance,
+                        PlannedDuration = job.PlannedDuration,
+                        DriverExperience = job.DriverExperience,
+                        VehicleType = job.VehicleType,
+                        CompletedDate = DateTime.UtcNow,
+                        Status = "Delivered",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    await _jobHistoryRepository.CreateAsync(jobHistory);
+                }
+            }
+            
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Job status updated successfully" });

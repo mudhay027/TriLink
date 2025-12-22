@@ -13,5 +13,8 @@ namespace Backend.Models.DTO
         public string DriverExperience { get; set; }
         public string VehicleType { get; set; }
         public string RoutePolyline { get; set; }
+        public string OriginCoords { get; set; }
+        public string DestinationCoords { get; set; }
+        public string TotalPrice { get; set; }
     }
 }

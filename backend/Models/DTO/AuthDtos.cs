@@ -14,25 +14,42 @@ namespace Backend.Models.DTO
 
     public class RegisterRequestDto
     {
-        [Required]
-        [DataType(DataType.EmailAddress)]
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid email address")]
         public string Email { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Username is required")]
+        [StringLength(50, MinimumLength = 3, ErrorMessage = "Username must be between 3 and 50 characters")]
         public string Username { get; set; }
 
-        [Required]
+        [Required(ErrorMessage = "Password is required")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters long")]
         [DataType(DataType.Password)]
         public string Password { get; set; }
 
+        [Required(ErrorMessage = "Role is required")]
         public string Role { get; set; } // "Supplier", "Buyer", "Logistics"
         
         // New Company Information Fields
+        [Required(ErrorMessage = "Company Name is required")]
         public string? CompanyName { get; set; }
+
+        [Required(ErrorMessage = "GST Number is required")]
+        [RegularExpression(@"^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$", ErrorMessage = "Invalid GST Number format")]
         public string? GSTNumber { get; set; }
+
+        [Required(ErrorMessage = "PAN Number is required")]
+        [RegularExpression(@"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", ErrorMessage = "Invalid PAN Number format")]
         public string? PANNumber { get; set; }
+
+        [Required(ErrorMessage = "Contact Person is required")]
         public string? ContactPerson { get; set; }
+
+        [Required(ErrorMessage = "Contact Number is required")]
+        [Phone(ErrorMessage = "Invalid phone number")]
         public string? ContactNumber { get; set; }
+
+        [Required(ErrorMessage = "Address is required")]
         public string? Address { get; set; }
         public string? GSTCertificateUrl { get; set; }
         public string? PANCardUrl { get; set; }

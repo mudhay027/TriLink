@@ -29,9 +29,14 @@ const Registration = () => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [validationErrors, setValidationErrors] = useState({});
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        if (validationErrors[name]) {
+            setValidationErrors({ ...validationErrors, [name]: '' });
+        }
         setError('');
     };
 
@@ -43,9 +48,59 @@ const Registration = () => {
                 [docType]: file
             }
         });
+        if (validationErrors[docType]) {
+            setValidationErrors({ ...validationErrors, [docType]: '' });
+        }
+    };
+
+    const validateStep = (currentStep) => {
+        const errors = {};
+        if (currentStep === 1) {
+            if (!formData.fullName.trim()) errors.fullName = 'Full name is required';
+            if (!formData.email.trim()) {
+                errors.email = 'Email is required';
+            } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+                errors.email = 'Invalid email format';
+            }
+            if (!formData.password) {
+                errors.password = 'Password is required';
+            } else if (formData.password.length < 6) {
+                errors.password = 'Password must be at least 6 characters';
+            }
+            if (formData.password !== formData.confirmPassword) {
+                errors.confirmPassword = 'Passwords do not match';
+            }
+        } else if (currentStep === 2) {
+            if (!formData.companyName.trim()) errors.companyName = 'Company name is required';
+            if (!formData.gstNumber.trim()) {
+                errors.gstNumber = 'GST number is required';
+            } else if (!/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.gstNumber)) {
+                errors.gstNumber = 'Invalid GST format (e.g. 22AAAAA0000A1Z5)';
+            }
+            if (!formData.panNumber.trim()) {
+                errors.panNumber = 'PAN number is required';
+            } else if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.panNumber)) {
+                errors.panNumber = 'Invalid PAN format (e.g. ABCDE1234F)';
+            }
+            if (!formData.address.trim()) errors.address = 'Business address is required';
+            if (!formData.contactPerson.trim()) errors.contactPerson = 'Contact person is required';
+            if (!formData.contactNumber.trim()) {
+                errors.contactNumber = 'Contact number is required';
+            } else if (!/^\d{10}$/.test(formData.contactNumber)) {
+                errors.contactNumber = 'Contact number must be 10 digits';
+            }
+        } else if (currentStep === 3) {
+            if (!formData.documents.gstCertificate) errors.gstCertificate = 'GST Certificate is required';
+            if (!formData.documents.panCard) errors.panCard = 'PAN Card is required';
+        }
+
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
     };
 
     const nextStep = () => {
+        if (!validateStep(step)) return;
+
         if (step === 4) {
             handleRegister();
         } else {
@@ -160,6 +215,7 @@ const Registration = () => {
                                 handleChange={handleChange}
                                 onNext={nextStep}
                                 navigate={navigate}
+                                validationErrors={validationErrors}
                             />
                         )}
                         {step === 2 && (
@@ -167,6 +223,7 @@ const Registration = () => {
                                 formData={formData}
                                 handleChange={handleChange}
                                 onNext={nextStep}
+                                validationErrors={validationErrors}
                             />
                         )}
                         {step === 3 && (
@@ -175,6 +232,7 @@ const Registration = () => {
                                 handleFileChange={handleFileChange}
                                 onNext={nextStep}
                                 onPrev={prevStep}
+                                validationErrors={validationErrors}
                             />
                         )}
                         {step === 4 && (
@@ -242,7 +300,7 @@ const ProgressIndicator = ({ currentStep }) => {
 };
 
 // Step 1: Create Account
-const Step1Account = ({ formData, handleChange, onNext, navigate }) => (
+const Step1Account = ({ formData, handleChange, onNext, navigate, validationErrors }) => (
     <div className="fade-in">
         <h2 style={{ fontSize: '1.75rem', fontWeight: '600', marginBottom: '2rem' }}>Create your account</h2>
 
@@ -252,10 +310,11 @@ const Step1Account = ({ formData, handleChange, onNext, navigate }) => (
                 type="text"
                 name="fullName"
                 placeholder="Enter your full name"
-                className="input-field"
+                className={`input-field ${validationErrors.fullName ? 'error' : ''}`}
                 value={formData.fullName}
                 onChange={handleChange}
             />
+            {validationErrors.fullName && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.fullName}</p>}
         </div>
 
         <div className="input-group">
@@ -264,10 +323,11 @@ const Step1Account = ({ formData, handleChange, onNext, navigate }) => (
                 type="email"
                 name="email"
                 placeholder="Enter your email"
-                className="input-field"
+                className={`input-field ${validationErrors.email ? 'error' : ''}`}
                 value={formData.email}
                 onChange={handleChange}
             />
+            {validationErrors.email && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.email}</p>}
         </div>
 
         <div className="input-group">
@@ -276,10 +336,11 @@ const Step1Account = ({ formData, handleChange, onNext, navigate }) => (
                 type="password"
                 name="password"
                 placeholder="Create a password"
-                className="input-field"
+                className={`input-field ${validationErrors.password ? 'error' : ''}`}
                 value={formData.password}
                 onChange={handleChange}
             />
+            {validationErrors.password && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.password}</p>}
         </div>
 
         <div className="input-group">
@@ -288,10 +349,11 @@ const Step1Account = ({ formData, handleChange, onNext, navigate }) => (
                 type="password"
                 name="confirmPassword"
                 placeholder="Confirm your password"
-                className="input-field"
+                className={`input-field ${validationErrors.confirmPassword ? 'error' : ''}`}
                 value={formData.confirmPassword}
                 onChange={handleChange}
             />
+            {validationErrors.confirmPassword && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.confirmPassword}</p>}
         </div>
 
         <button
@@ -309,7 +371,7 @@ const Step1Account = ({ formData, handleChange, onNext, navigate }) => (
 );
 
 // Step 2: Company Details
-const Step2CompanyDetails = ({ formData, handleChange, onNext }) => (
+const Step2CompanyDetails = ({ formData, handleChange, onNext, validationErrors }) => (
     <div className="fade-in">
         <h2 style={{ fontSize: '1.75rem', fontWeight: '600', marginBottom: '0.5rem' }}>Complete your profile</h2>
         <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '0.95rem' }}>
@@ -325,10 +387,11 @@ const Step2CompanyDetails = ({ formData, handleChange, onNext }) => (
                     type="text"
                     name="companyName"
                     placeholder="Enter company name"
-                    className="input-field"
+                    className={`input-field ${validationErrors.companyName ? 'error' : ''}`}
                     value={formData.companyName}
                     onChange={handleChange}
                 />
+                {validationErrors.companyName && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.companyName}</p>}
             </div>
             <div className="input-group">
                 <label className="input-label">GST Number</label>
@@ -336,10 +399,11 @@ const Step2CompanyDetails = ({ formData, handleChange, onNext }) => (
                     type="text"
                     name="gstNumber"
                     placeholder="Enter GST number"
-                    className="input-field"
+                    className={`input-field ${validationErrors.gstNumber ? 'error' : ''}`}
                     value={formData.gstNumber}
                     onChange={handleChange}
                 />
+                {validationErrors.gstNumber && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.gstNumber}</p>}
             </div>
             {/* Added PAN Number Field */}
             <div className="input-group">
@@ -348,10 +412,11 @@ const Step2CompanyDetails = ({ formData, handleChange, onNext }) => (
                     type="text"
                     name="panNumber"
                     placeholder="Enter PAN number"
-                    className="input-field"
+                    className={`input-field ${validationErrors.panNumber ? 'error' : ''}`}
                     value={formData.panNumber}
                     onChange={handleChange}
                 />
+                {validationErrors.panNumber && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.panNumber}</p>}
             </div>
             {/* Spacer for grid to keep last item left aligned if needed, or just let it flow */}
             <div></div>
@@ -362,12 +427,13 @@ const Step2CompanyDetails = ({ formData, handleChange, onNext }) => (
             <textarea
                 name="address"
                 placeholder="Enter complete business address"
-                className="input-field"
+                className={`input-field ${validationErrors.address ? 'error' : ''}`}
                 rows="3"
                 style={{ resize: 'none' }}
                 value={formData.address}
                 onChange={handleChange}
             />
+            {validationErrors.address && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.address}</p>}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -377,10 +443,11 @@ const Step2CompanyDetails = ({ formData, handleChange, onNext }) => (
                     type="text"
                     name="contactPerson"
                     placeholder="Enter contact person name"
-                    className="input-field"
+                    className={`input-field ${validationErrors.contactPerson ? 'error' : ''}`}
                     value={formData.contactPerson}
                     onChange={handleChange}
                 />
+                {validationErrors.contactPerson && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.contactPerson}</p>}
             </div>
             <div className="input-group">
                 <label className="input-label">Contact Number</label>
@@ -388,10 +455,11 @@ const Step2CompanyDetails = ({ formData, handleChange, onNext }) => (
                     type="text"
                     name="contactNumber"
                     placeholder="Enter contact number"
-                    className="input-field"
+                    className={`input-field ${validationErrors.contactNumber ? 'error' : ''}`}
                     value={formData.contactNumber}
                     onChange={handleChange}
                 />
+                {validationErrors.contactNumber && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.contactNumber}</p>}
             </div>
         </div>
 
@@ -408,7 +476,7 @@ const Step2CompanyDetails = ({ formData, handleChange, onNext }) => (
 );
 
 // Step 3: Document Upload
-const Step3Documents = ({ formData, handleFileChange, onNext, onPrev }) => {
+const Step3Documents = ({ formData, handleFileChange, onNext, onPrev, validationErrors }) => {
     return (
         <div className="fade-in">
             <h2 style={{ fontSize: '1.75rem', fontWeight: '600', marginBottom: '0.5rem' }}>Upload Documents</h2>
@@ -424,12 +492,14 @@ const Step3Documents = ({ formData, handleFileChange, onNext, onPrev }) => {
                     subLabel="Upload your GST registration certificate (PDF/JPG)"
                     file={formData.documents.gstCertificate}
                     onChange={(e) => handleFileChange('gstCertificate', e.target.files[0])}
+                    error={validationErrors.gstCertificate}
                 />
                 <FileUpload
                     label="PAN Card / Company ID"
                     subLabel="Upload company PAN card or ID proof (PDF/JPG)"
                     file={formData.documents.panCard}
                     onChange={(e) => handleFileChange('panCard', e.target.files[0])}
+                    error={validationErrors.panCard}
                 />
             </div>
 
@@ -453,14 +523,14 @@ const Step3Documents = ({ formData, handleFileChange, onNext, onPrev }) => {
     );
 };
 
-const FileUpload = ({ label, subLabel, file, onChange }) => (
+const FileUpload = ({ label, subLabel, file, onChange, error }) => (
     <div style={{
         border: '2px dashed var(--border)',
         borderRadius: '12px',
         padding: '2rem',
         textAlign: 'center',
-        background: file ? '#f0fdf4' : '#f8fafc',
-        borderColor: file ? 'var(--accent)' : 'var(--border)',
+        background: file ? '#f0fdf4' : (error ? '#fef2f2' : '#f8fafc'),
+        borderColor: file ? 'var(--accent)' : (error ? 'red' : 'var(--border)'),
         transition: 'all 0.3s ease',
         cursor: 'pointer',
         position: 'relative'
@@ -476,18 +546,18 @@ const FileUpload = ({ label, subLabel, file, onChange }) => (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{
                 width: '48px', height: '48px',
-                background: file ? 'var(--accent)' : '#e2e8f0',
+                background: file ? 'var(--accent)' : (error ? 'red' : '#e2e8f0'),
                 borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: file ? 'white' : 'var(--text-muted)'
+                color: (file || error) ? 'white' : 'var(--text-muted)'
             }}>
                 {file ? <Check size={24} /> : <UploadCloud size={24} />}
             </div>
             <div>
-                <h4 style={{ fontWeight: '600', color: 'var(--text-main)', marginBottom: '0.25rem' }}>
-                    {file ? file.name : label}
+                <h4 style={{ fontWeight: '600', color: error ? 'red' : 'var(--text-main)', marginBottom: '0.25rem' }}>
+                    {file ? file.name : (error || label)}
                 </h4>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                <p style={{ fontSize: '0.85rem', color: error ? 'red' : 'var(--text-muted)' }}>
                     {file ? 'File selected' : subLabel}
                 </p>
             </div>

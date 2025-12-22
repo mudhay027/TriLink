@@ -10,12 +10,33 @@ const Login = () => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [validationErrors, setValidationErrors] = useState({});
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        if (validationErrors[name]) {
+            setValidationErrors({ ...validationErrors, [name]: '' });
+        }
+    };
+
+    const validate = () => {
+        const errors = {};
+        if (!formData.email.trim()) {
+            errors.email = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            errors.email = 'Invalid email format';
+        }
+        if (!formData.password) {
+            errors.password = 'Password is required';
+        }
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
     };
 
     const handleSubmit = async () => {
+        if (!validate()) return;
+
         // Clear previous session data immediately
         localStorage.clear();
 
@@ -34,6 +55,14 @@ const Login = () => {
 
             if (!response.ok) {
                 console.error('Login failed response:', data);
+                if (data.errors) {
+                    // Map backend validation errors if any
+                    const backendErrors = {};
+                    Object.keys(data.errors).forEach(key => {
+                        backendErrors[key.toLowerCase()] = data.errors[key][0];
+                    });
+                    setValidationErrors(backendErrors);
+                }
                 throw new Error(data.message || data.title || 'Login failed'); // Handle ASP.NET default error structure
             }
 
@@ -125,10 +154,11 @@ const Login = () => {
                                 type="email"
                                 name="email"
                                 placeholder="Enter your email"
-                                className="input-field"
+                                className={`input-field ${validationErrors.email ? 'error' : ''}`}
                                 value={formData.email}
                                 onChange={handleChange}
                             />
+                            {validationErrors.email && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.email}</p>}
                         </div>
 
                         <div className="input-group">
@@ -137,10 +167,11 @@ const Login = () => {
                                 type="password"
                                 name="password"
                                 placeholder="Enter your password"
-                                className="input-field"
+                                className={`input-field ${validationErrors.password ? 'error' : ''}`}
                                 value={formData.password}
                                 onChange={handleChange}
                             />
+                            {validationErrors.password && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.password}</p>}
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', fontSize: '0.9rem' }}>

@@ -58,12 +58,57 @@ const BuyerLogisticsJobCreation = () => {
         status: 'Active'
     });
 
+    const [validationErrors, setValidationErrors] = useState({});
+
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData({
             ...formData,
             [name]: type === 'checkbox' ? checked : value
         });
+        if (validationErrors[name]) {
+            setValidationErrors({ ...validationErrors, [name]: '' });
+        }
+    };
+
+    const validateForm = () => {
+        const errors = {};
+        // Pickup
+        if (!formData.pickupAddressLine1.trim()) errors.pickupAddressLine1 = 'Pickup address is required';
+        if (!formData.pickupCity.trim()) errors.pickupCity = 'Pickup city is required';
+        if (!formData.pickupState.trim()) errors.pickupState = 'Pickup state is required';
+        if (!/^[1-9][0-9]{5}$/.test(formData.pickupPincode)) errors.pickupPincode = 'Invalid pickup pincode';
+        if (!formData.pickupLandmark.trim()) errors.pickupLandmark = 'Pickup landmark is required';
+
+        // Drop
+        if (!formData.dropAddressLine1.trim()) errors.dropAddressLine1 = 'Drop address is required';
+        if (!formData.dropCity.trim()) errors.dropCity = 'Drop city is required';
+        if (!formData.dropState.trim()) errors.dropState = 'Drop state is required';
+        if (!/^[1-9][0-9]{5}$/.test(formData.dropPincode)) errors.dropPincode = 'Invalid drop pincode';
+        if (!formData.dropLandmark.trim()) errors.dropLandmark = 'Drop landmark is required';
+
+        // Timing
+        if (!formData.pickupDate) errors.pickupDate = 'Pickup date is required';
+        if (!formData.deliveryExpectedDate) errors.deliveryExpectedDate = 'Delivery expected date is required';
+
+        // Pallet
+        if (!formData.palletCount || formData.palletCount < 1) errors.palletCount = 'Pallet count must be at least 1';
+        if (!formData.totalWeight || formData.totalWeight <= 0) errors.totalWeight = 'Total weight must be greater than 0';
+
+        // Documentation
+        if (!formData.ewayBillNumber.trim()) errors.ewayBillNumber = 'E-Way bill number is required';
+        if (!formData.invoiceNumber.trim()) errors.invoiceNumber = 'Invoice number is required';
+        if (formData.gstNumber && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(formData.gstNumber)) {
+            errors.gstNumber = 'Invalid GST format';
+        }
+
+        // Sender
+        if (!formData.senderName.trim()) errors.senderName = 'Sender name is required';
+        if (!/^\d{10}$/.test(formData.senderMobile)) errors.senderMobile = 'Invalid 10-digit mobile number';
+        if (!/\S+@\S+\.\S+/.test(formData.senderEmail)) errors.senderEmail = 'Invalid email address';
+
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
     };
 
     const calculateVolumetricWeight = () => {
@@ -76,6 +121,8 @@ const BuyerLogisticsJobCreation = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validateForm()) return;
+
         try {
             const token = localStorage.getItem('token');
 
@@ -102,7 +149,6 @@ const BuyerLogisticsJobCreation = () => {
 
             if (response.ok) {
                 setShowCreateForm(false);
-                // Reset form
                 setFormData({
                     pickupAddressLine1: '', pickupAddressLine2: '', pickupLandmark: '', pickupCity: '', pickupState: '', pickupPincode: '',
                     dropAddressLine1: '', dropAddressLine2: '', dropLandmark: '', dropCity: '', dropState: '', dropPincode: '',
@@ -112,11 +158,18 @@ const BuyerLogisticsJobCreation = () => {
                     senderName: '', senderCompanyName: '', senderMobile: '', senderEmail: '', status: 'Active'
                 });
                 alert('Logistics Job Created Successfully!');
-                // Optionally redirect to view created jobs
                 const userId = localStorage.getItem('userId');
                 navigate(`/buyer/logistics-job-management/${userId}`);
             } else {
-                alert(`Note: Backend might not support all fields yet. Response: ${response.status}`);
+                const data = await response.json();
+                if (data.errors) {
+                    const backendErrors = {};
+                    Object.keys(data.errors).forEach(key => {
+                        backendErrors[key.charAt(0).toLowerCase() + key.slice(1)] = data.errors[key][0];
+                    });
+                    setValidationErrors(prev => ({ ...prev, ...backendErrors }));
+                }
+                alert(`Error creating job: ${data.title || response.statusText}`);
             }
         } catch (error) {
             console.error("Error creating job", error);
@@ -223,7 +276,8 @@ const BuyerLogisticsJobCreation = () => {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                                     <div className="input-group" style={{ gridColumn: '1 / -1' }}>
                                         <label className="input-label">Pickup Address Line 1 *</label>
-                                        <input type="text" name="pickupAddressLine1" className="input-field" required value={formData.pickupAddressLine1} onChange={handleInputChange} placeholder="Building/House No, Street Name" />
+                                        <input type="text" name="pickupAddressLine1" className={`input-field ${validationErrors.pickupAddressLine1 ? 'error' : ''}`} value={formData.pickupAddressLine1} onChange={handleInputChange} placeholder="Building/House No, Street Name" />
+                                        {validationErrors.pickupAddressLine1 && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.pickupAddressLine1}</p>}
                                     </div>
                                     <div className="input-group" style={{ gridColumn: '1 / -1' }}>
                                         <label className="input-label">Pickup Address Line 2</label>
@@ -231,19 +285,23 @@ const BuyerLogisticsJobCreation = () => {
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Landmark *</label>
-                                        <input type="text" name="pickupLandmark" className="input-field" required value={formData.pickupLandmark} onChange={handleInputChange} placeholder="Near..." />
+                                        <input type="text" name="pickupLandmark" className={`input-field ${validationErrors.pickupLandmark ? 'error' : ''}`} value={formData.pickupLandmark} onChange={handleInputChange} placeholder="Near..." />
+                                        {validationErrors.pickupLandmark && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.pickupLandmark}</p>}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Pincode *</label>
-                                        <input type="text" name="pickupPincode" className="input-field" required value={formData.pickupPincode} onChange={handleInputChange} pattern="[0-9]{6}" placeholder="6-digit pincode" />
+                                        <input type="text" name="pickupPincode" className={`input-field ${validationErrors.pickupPincode ? 'error' : ''}`} value={formData.pickupPincode} onChange={handleInputChange} pattern="[0-9]{6}" placeholder="6-digit pincode" />
+                                        {validationErrors.pickupPincode && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.pickupPincode}</p>}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">City *</label>
-                                        <input type="text" name="pickupCity" className="input-field" required value={formData.pickupCity} onChange={handleInputChange} />
+                                        <input type="text" name="pickupCity" className={`input-field ${validationErrors.pickupCity ? 'error' : ''}`} value={formData.pickupCity} onChange={handleInputChange} />
+                                        {validationErrors.pickupCity && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.pickupCity}</p>}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">State *</label>
-                                        <input type="text" name="pickupState" className="input-field" required value={formData.pickupState} onChange={handleInputChange} />
+                                        <input type="text" name="pickupState" className={`input-field ${validationErrors.pickupState ? 'error' : ''}`} value={formData.pickupState} onChange={handleInputChange} />
+                                        {validationErrors.pickupState && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.pickupState}</p>}
                                     </div>
                                 </div>
                             </div>
@@ -258,7 +316,8 @@ const BuyerLogisticsJobCreation = () => {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                                     <div className="input-group" style={{ gridColumn: '1 / -1' }}>
                                         <label className="input-label">Drop Address Line 1 *</label>
-                                        <input type="text" name="dropAddressLine1" className="input-field" required value={formData.dropAddressLine1} onChange={handleInputChange} placeholder="Building/House No, Street Name" />
+                                        <input type="text" name="dropAddressLine1" className={`input-field ${validationErrors.dropAddressLine1 ? 'error' : ''}`} value={formData.dropAddressLine1} onChange={handleInputChange} placeholder="Building/House No, Street Name" />
+                                        {validationErrors.dropAddressLine1 && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.dropAddressLine1}</p>}
                                     </div>
                                     <div className="input-group" style={{ gridColumn: '1 / -1' }}>
                                         <label className="input-label">Drop Address Line 2</label>
@@ -266,19 +325,23 @@ const BuyerLogisticsJobCreation = () => {
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Landmark *</label>
-                                        <input type="text" name="dropLandmark" className="input-field" required value={formData.dropLandmark} onChange={handleInputChange} placeholder="Near..." />
+                                        <input type="text" name="dropLandmark" className={`input-field ${validationErrors.dropLandmark ? 'error' : ''}`} value={formData.dropLandmark} onChange={handleInputChange} placeholder="Near..." />
+                                        {validationErrors.dropLandmark && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.dropLandmark}</p>}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Pincode *</label>
-                                        <input type="text" name="dropPincode" className="input-field" required value={formData.dropPincode} onChange={handleInputChange} pattern="[0-9]{6}" placeholder="6-digit pincode" />
+                                        <input type="text" name="dropPincode" className={`input-field ${validationErrors.dropPincode ? 'error' : ''}`} value={formData.dropPincode} onChange={handleInputChange} pattern="[0-9]{6}" placeholder="6-digit pincode" />
+                                        {validationErrors.dropPincode && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.dropPincode}</p>}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">City *</label>
-                                        <input type="text" name="dropCity" className="input-field" required value={formData.dropCity} onChange={handleInputChange} />
+                                        <input type="text" name="dropCity" className={`input-field ${validationErrors.dropCity ? 'error' : ''}`} value={formData.dropCity} onChange={handleInputChange} />
+                                        {validationErrors.dropCity && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.dropCity}</p>}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">State *</label>
-                                        <input type="text" name="dropState" className="input-field" required value={formData.dropState} onChange={handleInputChange} />
+                                        <input type="text" name="dropState" className={`input-field ${validationErrors.dropState ? 'error' : ''}`} value={formData.dropState} onChange={handleInputChange} />
+                                        {validationErrors.dropState && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.dropState}</p>}
                                     </div>
                                 </div>
                             </div>
@@ -293,7 +356,8 @@ const BuyerLogisticsJobCreation = () => {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem' }}>
                                     <div className="input-group">
                                         <label className="input-label">Pickup Date *</label>
-                                        <input type="date" name="pickupDate" className="input-field" required value={formData.pickupDate} onChange={handleInputChange} />
+                                        <input type="date" name="pickupDate" className={`input-field ${validationErrors.pickupDate ? 'error' : ''}`} value={formData.pickupDate} onChange={handleInputChange} />
+                                        {validationErrors.pickupDate && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.pickupDate}</p>}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Pickup Time Slot *</label>
@@ -315,7 +379,8 @@ const BuyerLogisticsJobCreation = () => {
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Expected Delivery Date *</label>
-                                        <input type="date" name="deliveryExpectedDate" className="input-field" required value={formData.deliveryExpectedDate} onChange={handleInputChange} />
+                                        <input type="date" name="deliveryExpectedDate" className={`input-field ${validationErrors.deliveryExpectedDate ? 'error' : ''}`} value={formData.deliveryExpectedDate} onChange={handleInputChange} />
+                                        {validationErrors.deliveryExpectedDate && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.deliveryExpectedDate}</p>}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Delivery Time Window *</label>
@@ -339,11 +404,13 @@ const BuyerLogisticsJobCreation = () => {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem' }}>
                                     <div className="input-group">
                                         <label className="input-label">Pallet Count *</label>
-                                        <input type="number" name="palletCount" className="input-field" required value={formData.palletCount} onChange={handleInputChange} min="1" />
+                                        <input type="number" name="palletCount" className={`input-field ${validationErrors.palletCount ? 'error' : ''}`} value={formData.palletCount} onChange={handleInputChange} min="1" />
+                                        {validationErrors.palletCount && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.palletCount}</p>}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Total Weight (kg) *</label>
-                                        <input type="number" step="0.01" name="totalWeight" className="input-field" required value={formData.totalWeight} onChange={handleInputChange} />
+                                        <input type="number" step="0.01" name="totalWeight" className={`input-field ${validationErrors.totalWeight ? 'error' : ''}`} value={formData.totalWeight} onChange={handleInputChange} />
+                                        {validationErrors.totalWeight && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.totalWeight}</p>}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Material Type *</label>
@@ -431,7 +498,8 @@ const BuyerLogisticsJobCreation = () => {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                                     <div className="input-group">
                                         <label className="input-label">Sender Name *</label>
-                                        <input type="text" name="senderName" className="input-field" required value={formData.senderName} onChange={handleInputChange} />
+                                        <input type="text" name="senderName" className={`input-field ${validationErrors.senderName ? 'error' : ''}`} value={formData.senderName} onChange={handleInputChange} />
+                                        {validationErrors.senderName && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.senderName}</p>}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Company Name</label>
@@ -439,11 +507,13 @@ const BuyerLogisticsJobCreation = () => {
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Sender Mobile *</label>
-                                        <input type="tel" name="senderMobile" className="input-field" required value={formData.senderMobile} onChange={handleInputChange} pattern="[0-9]{10}" placeholder="10-digit mobile" />
+                                        <input type="tel" name="senderMobile" className={`input-field ${validationErrors.senderMobile ? 'error' : ''}`} value={formData.senderMobile} onChange={handleInputChange} pattern="[0-9]{10}" placeholder="10-digit mobile" />
+                                        {validationErrors.senderMobile && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.senderMobile}</p>}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Sender Email *</label>
-                                        <input type="email" name="senderEmail" className="input-field" required value={formData.senderEmail} onChange={handleInputChange} />
+                                        <input type="email" name="senderEmail" className={`input-field ${validationErrors.senderEmail ? 'error' : ''}`} value={formData.senderEmail} onChange={handleInputChange} />
+                                        {validationErrors.senderEmail && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.senderEmail}</p>}
                                     </div>
                                 </div>
                             </div>

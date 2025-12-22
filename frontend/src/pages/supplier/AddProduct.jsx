@@ -212,9 +212,17 @@ const AddProduct = () => {
                                         onChange={handleChange}
                                     >
                                         <option value="Ton">Ton</option>
-                                        <option value="Bag">Bag</option>
+                                        <option value="Bag (50kg)">Bag (50kg)</option>
+                                        <option value="Bag (20kg)">Bag (20kg)</option>
+                                        <option value="Cubic Meter">Cubic Meter</option>
+                                        <option value="Roll (90m)">Roll (90m)</option>
+                                        <option value="Meter">Meter</option>
+                                        <option value="Unit">Unit</option>
+                                        <option value="Bucket (20L)">Bucket (20L)</option>
+                                        <option value="Bucket (10L)">Bucket (10L)</option>
                                         <option value="Kg">Kg</option>
-                                        <option value="M3">m³</option>
+                                        <option value="Litre (L)">Litre (L)</option>
+                                        <option value="Box / Carton">Box / Carton</option>
                                     </select>
                                     <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }} />
                                 </div>

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, FileText, CheckCircle, Clock, Bell, User } from 'lucide-react';
+import { Truck, FileText, CheckCircle, Clock, Bell, User, Eye } from 'lucide-react';
+import RouteViewModal from '../../components/RouteViewModal';
 import '../../index.css';
 
 const LogisticsDashboard = () => {
     const navigate = useNavigate();
     const [selectedJob, setSelectedJob] = useState('JOB-001');
     const [jobHistory, setJobHistory] = useState([]);
+    const [viewRouteJobId, setViewRouteJobId] = useState(null);
     // const [jobHistory, setJobHistory] = useState([]); // This state is no longer needed
 
     // Stats
@@ -20,6 +22,7 @@ const LogisticsDashboard = () => {
         const fetchStats = async () => {
             try {
                 const token = localStorage.getItem('token');
+                const userId = localStorage.getItem('userId');
                 const headers = { 'Authorization': `Bearer ${token}` };
 
                 // Fetch Available Jobs
@@ -40,16 +43,11 @@ const LogisticsDashboard = () => {
                 const quotesRes = await fetch('http://localhost:5081/api/BuyerLogisticsJob/my-quotes', { headers });
                 if (quotesRes.ok) {
                     const quotedJobs = await quotesRes.json();
-                    console.log('Dashboard API Response:', quotedJobs);
-                    console.log('First job sample:', quotedJobs[0]);
                     // Only count quotes that are still "Pending" (actually quoted, not accepted/rejected)
                     const pendingQuotes = quotedJobs.filter(quote => quote.status === 'Pending');
                     setQuotesSubmittedCount(pendingQuotes.length);
 
-                    // Combine quoted jobs with localStorage jobs for dashboard display
-                    const localHistory = JSON.parse(localStorage.getItem('jobHistory') || '[]');
-
-                    // Map API jobs to match localStorage format
+                    // Map API jobs to match display format
                     const mappedQuotedJobs = quotedJobs.map(job => ({
                         id: job.id,
                         origin: job.jobPickupCity || job.jobPickupAddressLine1 || 'Unknown',
@@ -61,24 +59,29 @@ const LogisticsDashboard = () => {
                         distance: job.plannedDistance || job.distance || 'N/A'
                     }));
 
-                    // Combine and deduplicate
-                    const combinedJobs = [...mappedQuotedJobs, ...localHistory];
-                    const uniqueJobs = combinedJobs.filter((job, index, self) =>
-                        index === self.findIndex((j) => j.id === job.id)
-                    );
+                    setAllJobs(mappedQuotedJobs);
+                }
 
-                    setAllJobs(uniqueJobs);
-                } else {
-                    // If API fails, fallback to localStorage only
-                    const localHistory = JSON.parse(localStorage.getItem('jobHistory') || '[]');
-                    setAllJobs(localHistory);
+                // Fetch Job History from API
+                const historyRes = await fetch(`http://localhost:5081/api/JobHistory/my-history?userId=${userId}`, { headers });
+                if (historyRes.ok) {
+                    const historyData = await historyRes.json();
+                    const formattedHistory = historyData.map(job => ({
+                        id: job.jobId,
+                        origin: job.origin,
+                        destination: job.destination,
+                        status: job.status,
+                        date: new Date(job.completedDate).toLocaleDateString(),
+                        driverExp: job.driverExperience || 'N/A',
+                        vehicleType: job.vehicleType || 'N/A',
+                        distance: job.plannedDistance || 'N/A',
+                        duration: job.plannedDuration || 'N/A'
+                    }));
+                    setJobHistory(formattedHistory);
                 }
 
             } catch (error) {
                 console.error("Error fetching dashboard stats:", error);
-                // Fallback to localStorage if API fails
-                const localHistory = JSON.parse(localStorage.getItem('jobHistory') || '[]');
-                setAllJobs(localHistory);
             }
         };
 
@@ -96,7 +99,10 @@ const LogisticsDashboard = () => {
             {/* Header */}
             <header style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }}>
+                        <img src="/trilink_logo.jpg" alt="TriLink" style={{ height: '36px' }} />
+                        <span style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</span>
+                    </div>
                     <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>
                         <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }} style={{ color: 'var(--text-main)', cursor: 'pointer' }}>Dashboard</a>
                         <span onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/available-jobs/${userId}`); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Search Jobs</span>
@@ -141,126 +147,161 @@ const LogisticsDashboard = () => {
                     ))}
                 </div>
 
-                {/* Active and Delivered Jobs */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '3rem' }}>
-                    {/* Active Jobs */}
-                    <div>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Active Jobs</h3>
-                        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                            {(() => {
-                                // Filter for all non-delivered statuses (In Progress, Picked, In Transit, etc.)
-                                const activeJobs = allJobs.filter(job =>
-                                    job.status !== 'Delivered' && job.status !== 'Completed'
-                                ).slice(0, 5);
+                {/* Active Jobs */}
+                <div style={{ marginBottom: '3rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Active Jobs</h3>
+                    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                        {(() => {
+                            // Filter for all non-delivered statuses
+                            const activeJobs = allJobs.filter(job =>
+                                job.status !== 'Delivered' && job.status !== 'Completed'
+                            ).slice(0, 5);
 
-                                if (activeJobs.length === 0) {
-                                    return (
-                                        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                            <Clock size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                                            <p>No active jobs</p>
-                                        </div>
-                                    );
-                                }
-
+                            if (activeJobs.length === 0) {
                                 return (
-                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                        <thead style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
-                                            <tr>
-                                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Job ID</th>
-                                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Route</th>
-                                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Status</th>
-                                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Date</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {activeJobs.map((job, index) => (
-                                                <tr key={index} style={{ borderBottom: index < activeJobs.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                                                    <td style={{ padding: '0.75rem 1rem', fontWeight: '500', fontSize: '0.85rem' }}>
-                                                        {job.id && job.id.length > 8 ? `JOB-${job.id.substring(0, 6)}` : job.id}
-                                                    </td>
-                                                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                        {job.origin} → {job.destination}
-                                                    </td>
-                                                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>
-                                                        <span style={{
-                                                            padding: '0.25rem 0.75rem',
-                                                            borderRadius: '12px',
-                                                            fontSize: '0.75rem',
-                                                            fontWeight: '500',
-                                                            background: job.status === 'In Transit' ? '#dbeafe' : job.status === 'Picked' ? '#fef3c7' : '#e0e7ff',
-                                                            color: job.status === 'In Transit' ? '#1e40af' : job.status === 'Picked' ? '#92400e' : '#4338ca'
-                                                        }}>
-                                                            {job.status}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{job.date}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                        <Clock size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                                        <p>No active jobs</p>
+                                    </div>
                                 );
-                            })()}
-                        </div>
+                            }
+
+                            return (
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
+                                        <tr>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Job ID</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Route</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Status</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {activeJobs.map((job, index) => (
+                                            <tr key={index} style={{ borderBottom: index < activeJobs.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                                                <td style={{ padding: '0.75rem 1rem', fontWeight: '500', fontSize: '0.85rem' }}>
+                                                    {job.id && job.id.length > 8 ? `JOB-${job.id.substring(0, 6)}` : job.id}
+                                                </td>
+                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                    {job.origin} → {job.destination}
+                                                </td>
+                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>
+                                                    <span style={{
+                                                        padding: '0.25rem 0.75rem',
+                                                        borderRadius: '12px',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: '500',
+                                                        background: job.status === 'In Transit' ? '#dbeafe' : job.status === 'Picked' ? '#fef3c7' : '#e0e7ff',
+                                                        color: job.status === 'In Transit' ? '#1e40af' : job.status === 'Picked' ? '#92400e' : '#4338ca'
+                                                    }}>
+                                                        {job.status}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{job.date}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            );
+                        })()}
                     </div>
+                </div>
 
-                    {/* Delivered Jobs */}
-                    <div>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Delivered Jobs</h3>
-                        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                            {(() => {
-                                const deliveredJobs = allJobs.filter(job => job.status === 'Delivered' || job.status === 'Completed').slice(0, 5);
+                {/* Job History */}
+                <div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Job History</h3>
+                    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                        {(() => {
+                            const historyJobs = jobHistory;
 
-                                if (deliveredJobs.length === 0) {
-                                    return (
-                                        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                            <CheckCircle size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                                            <p>No delivered jobs</p>
-                                        </div>
-                                    );
-                                }
-
+                            if (historyJobs.length === 0) {
                                 return (
-                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                        <thead style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
-                                            <tr>
-                                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Job ID</th>
-                                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Route</th>
-                                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Status</th>
-                                                <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Date</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {deliveredJobs.map((job, index) => (
-                                                <tr key={index} style={{ borderBottom: index < deliveredJobs.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                                                    <td style={{ padding: '0.75rem 1rem', fontWeight: '500', fontSize: '0.85rem' }}>
-                                                        {job.id && job.id.length > 8 ? `JOB-${job.id.substring(0, 6)}` : job.id}
-                                                    </td>
-                                                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                        {job.origin} → {job.destination}
-                                                    </td>
-                                                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>
-                                                        <span style={{
-                                                            padding: '0.25rem 0.75rem',
-                                                            borderRadius: '12px',
-                                                            fontSize: '0.75rem',
-                                                            fontWeight: '500',
-                                                            background: '#ecfdf5',
-                                                            color: '#059669'
-                                                        }}>
-                                                            {job.status}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{job.date}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                    <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                        <CheckCircle size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                                        <p>No delivered jobs</p>
+                                    </div>
                                 );
-                            })()}
-                        </div>
+                            }
+
+                            return (
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead style={{ background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
+                                        <tr>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Job ID</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Route</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Status</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Date</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Driver Experience</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Vehicle Recommended</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Distance</th>
+                                            <th style={{ padding: '0.75rem 1rem', textAlign: 'right', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {historyJobs.map((job, index) => (
+                                            <tr
+                                                key={index}
+                                                style={{ borderBottom: index < historyJobs.length - 1 ? '1px solid var(--border)' : 'none' }}
+                                            >
+                                                <td style={{ padding: '0.75rem 1rem', fontWeight: '500', fontSize: '0.85rem' }}>
+                                                    {job.id && job.id.length > 8 ? `JOB-${job.id.substring(0, 6)}` : job.id}
+                                                </td>
+                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                                    {job.origin} → {job.destination}
+                                                </td>
+                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem' }}>
+                                                    <span style={{
+                                                        padding: '0.25rem 0.75rem',
+                                                        borderRadius: '12px',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: '500',
+                                                        background: '#ecfdf5',
+                                                        color: '#059669'
+                                                    }}>
+                                                        {job.status}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{job.date}</td>
+                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{job.driverExp}</td>
+                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{job.vehicleType}</td>
+                                                <td style={{ padding: '0.75rem 1rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>{job.distance}</td>
+                                                <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                                                    <button
+                                                        className="btn btn-primary"
+                                                        style={{
+                                                            padding: '0.4rem 0.8rem',
+                                                            fontSize: '0.75rem',
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: '0.25rem',
+                                                            background: '#2563eb',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '6px',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                        onClick={() => setViewRouteJobId(job.id)}
+                                                    >
+                                                        <Eye size={12} /> View Route
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            );
+                        })()}
                     </div>
                 </div>
             </main>
+
+            {/* Route View Modal */}
+            {viewRouteJobId && (
+                <RouteViewModal
+                    jobId={viewRouteJobId}
+                    onClose={() => setViewRouteJobId(null)}
+                />
+            )}
         </div>
     );
 };

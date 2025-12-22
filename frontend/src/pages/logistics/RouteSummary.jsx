@@ -41,25 +41,7 @@ const RouteSummary = () => {
                 body: JSON.stringify('In Progress')
             });
 
-            // Also save to localStorage for dashboard
-            const newJob = {
-                id: jobData?.id || 'JOB-' + Math.floor(Math.random() * 10000),
-                origin: jobData?.pickupCity || 'Unknown',
-                destination: jobData?.dropCity || 'Unknown',
-                status: 'In Progress',
-                date: new Date().toLocaleDateString(),
-                driverExp: suggestedRouteData?.driverExperience || '-',
-                vehicleType: suggestedRouteData?.vehicleType || '-',
-                distance: suggestedRouteData?.distance || 'N/A'
-            };
 
-            const existingHistory = JSON.parse(localStorage.getItem('jobHistory') || '[]');
-            // Check if job already exists
-            const jobExists = existingHistory.some(h => h.id === jobData?.id);
-            if (!jobExists) {
-                existingHistory.push(newJob);
-                localStorage.setItem('jobHistory', JSON.stringify(existingHistory));
-            }
 
             const userId = localStorage.getItem('userId');
             navigate(`/logistics/dashboard/${userId}`);
@@ -74,7 +56,10 @@ const RouteSummary = () => {
             {/* Header */}
             <header style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)', cursor: 'pointer' }} onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }}>TriLink</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }}>
+                        <img src="/trilink_logo.jpg" alt="TriLink" style={{ height: '36px' }} />
+                        <span style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</span>
+                    </div>
                     <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>
                         <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }} style={{ color: 'var(--text-main)', cursor: 'pointer' }}>Dashboard</a>
                         <span onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/available-jobs/${userId}`); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Search Jobs</span>

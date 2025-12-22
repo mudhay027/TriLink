@@ -20,28 +20,55 @@ const AddProduct = () => {
         documents: null
     });
 
+    const [validationErrors, setValidationErrors] = useState({});
+
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        if (validationErrors[name]) {
+            setValidationErrors({ ...validationErrors, [name]: '' });
+        }
     };
 
     const handleFileChange = (e, type) => {
         if (e.target.files && e.target.files[0]) {
             setFormData({ ...formData, [type]: e.target.files[0] });
+            if (validationErrors[type]) {
+                setValidationErrors({ ...validationErrors, [type]: '' });
+            }
         }
     };
 
+    const validate = () => {
+        const errors = {};
+        if (!formData.productName.trim()) errors.productName = 'Product name is required';
+        if (!formData.category) errors.category = 'Category is required';
+        if (!formData.price || formData.price <= 0) errors.price = 'Price must be greater than zero';
+        if (!formData.availableQty || formData.availableQty < 1) errors.availableQty = 'Available quantity must be at least 1';
+        if (!formData.minOrderQty || formData.minOrderQty < 1) errors.minOrderQty = 'Min order quantity must be at least 1';
+        if (!formData.leadTime || formData.leadTime < 1) errors.leadTime = 'Lead time must be at least 1 day';
+        if (!formData.location.trim()) errors.location = 'Location is required';
+
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
     const handleSubmit = async (status) => {
+        if (!validate()) {
+            return;
+        }
+
         const payload = new FormData();
-        payload.append('Name', formData.productName); // Match DTO property names (Case-insensitive usually, but strict is initialized)
+        payload.append('Name', formData.productName);
         payload.append('Category', formData.category);
         payload.append('Unit', formData.unit);
-        payload.append('BasePrice', formData.price || 0);
-        payload.append('Quantity', formData.availableQty || 0);
-        payload.append('MinOrderQty', formData.minOrderQty || 0);
-        payload.append('LeadTime', formData.leadTime || 7);
+        payload.append('BasePrice', formData.price);
+        payload.append('Quantity', formData.availableQty);
+        payload.append('MinOrderQty', formData.minOrderQty);
+        payload.append('LeadTime', formData.leadTime);
         payload.append('Description', formData.description || "");
         payload.append('Status', status);
-        payload.append('Location', formData.location || 'Not Specified');
+        payload.append('Location', formData.location);
 
         // Append Files
         if (formData.images) {
@@ -51,20 +78,19 @@ const AddProduct = () => {
             payload.append('CertificateFile', formData.documents);
         }
 
-        // SupplierId will be handled by token in backend, but DTO property exists.
-        // It's safer to rely on backend token extraction.
-
         try {
-            // Content-Type multipart/form-data is handled automatically by browser/axios/fetch when body is FormData
             const result = await api.post('/Product', payload, true);
-
-            // Navigate
-            // Navigate
             const userId = localStorage.getItem('userId');
             navigate(`/supplier/products/${userId}`, { state: { newProduct: true } });
-
         } catch (error) {
             console.error("Error submitting form:", error);
+            if (error.errors) {
+                const backendErrors = {};
+                Object.keys(error.errors).forEach(key => {
+                    backendErrors[key.toLowerCase()] = error.errors[key][0];
+                });
+                setValidationErrors(prev => ({ ...prev, ...backendErrors }));
+            }
             alert('An error occurred while saving the product: ' + error.message);
         }
     };
@@ -108,10 +134,11 @@ const AddProduct = () => {
                                 type="text"
                                 name="productName"
                                 placeholder="e.g. Steel Rebar 12mm"
-                                className="input-field"
+                                className={`input-field ${validationErrors.productName ? 'error' : ''}`}
                                 value={formData.productName}
                                 onChange={handleChange}
                             />
+                            {validationErrors.productName && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.productName}</p>}
                         </div>
 
                         <div className="input-group">
@@ -119,7 +146,7 @@ const AddProduct = () => {
                             <div style={{ position: 'relative' }}>
                                 <select
                                     name="category"
-                                    className="input-field"
+                                    className={`input-field ${validationErrors.category ? 'error' : ''}`}
                                     style={{ appearance: 'none', cursor: 'pointer' }}
                                     value={formData.category}
                                     onChange={handleChange}
@@ -131,6 +158,7 @@ const AddProduct = () => {
                                 </select>
                                 <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }} />
                             </div>
+                            {validationErrors.category && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.category}</p>}
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -158,10 +186,11 @@ const AddProduct = () => {
                                     type="number"
                                     name="price"
                                     placeholder="₹0.00"
-                                    className="input-field"
+                                    className={`input-field ${validationErrors.price ? 'error' : ''}`}
                                     value={formData.price}
                                     onChange={handleChange}
                                 />
+                                {validationErrors.price && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.price}</p>}
                             </div>
                         </div>
 
@@ -172,10 +201,11 @@ const AddProduct = () => {
                                     type="number"
                                     name="availableQty"
                                     placeholder="0"
-                                    className="input-field"
+                                    className={`input-field ${validationErrors.availableQty ? 'error' : ''}`}
                                     value={formData.availableQty}
                                     onChange={handleChange}
                                 />
+                                {validationErrors.availableQty && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.availableQty}</p>}
                             </div>
                             <div className="input-group">
                                 <label className="input-label">Min Order Quantity</label>
@@ -183,10 +213,11 @@ const AddProduct = () => {
                                     type="number"
                                     name="minOrderQty"
                                     placeholder="0"
-                                    className="input-field"
+                                    className={`input-field ${validationErrors.minOrderQty ? 'error' : ''}`}
                                     value={formData.minOrderQty}
                                     onChange={handleChange}
                                 />
+                                {validationErrors.minOrderQty && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.minOrderQty}</p>}
                             </div>
                         </div>
 
@@ -197,10 +228,11 @@ const AddProduct = () => {
                                     type="number"
                                     name="leadTime"
                                     placeholder="7"
-                                    className="input-field"
+                                    className={`input-field ${validationErrors.leadTime ? 'error' : ''}`}
                                     value={formData.leadTime}
                                     onChange={handleChange}
                                 />
+                                {validationErrors.leadTime && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.leadTime}</p>}
                             </div>
                             <div className="input-group">
                                 <label className="input-label">Location</label>
@@ -208,10 +240,11 @@ const AddProduct = () => {
                                     type="text"
                                     name="location"
                                     placeholder="e.g. Chennai Warehouse, Mumbai Depot"
-                                    className="input-field"
+                                    className={`input-field ${validationErrors.location ? 'error' : ''}`}
                                     value={formData.location}
                                     onChange={handleChange}
                                 />
+                                {validationErrors.location && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.location}</p>}
                             </div>
                         </div>
 

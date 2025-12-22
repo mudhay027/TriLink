@@ -189,11 +189,9 @@ const SearchProducts = () => {
                 status: 'Negotiation'
             });
             console.log("Negotiation Created:", response);
-            alert(`Counter offer sent! ID: ${response.id}, Status: ${response.status}, SellerId: ${response.sellerId}`);
+            alert(`Counter offer sent successfully! Your offer is being reviewed by the supplier.`);
 
             setShowModal(false);
-            const userId = localStorage.getItem('userId');
-            navigate(`/buyer/negotiation/${userId}`);
         } catch (error) {
             console.error("Failed to create negotiation", error);
             alert("Failed to send counter offer: " + error.message);

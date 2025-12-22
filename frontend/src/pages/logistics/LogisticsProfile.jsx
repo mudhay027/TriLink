@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Truck, FileText, CheckCircle, Bell, User, Edit2, Save, X, LogOut, Download } from 'lucide-react';
+import { Truck, FileText, CheckCircle, Bell, User, Edit2, Save, X, LogOut, Download, ArrowLeft } from 'lucide-react';
 import '../../index.css';
 
 const LogisticsProfile = () => {
@@ -70,14 +70,14 @@ const LogisticsProfile = () => {
                 docs.push({
                     name: 'GST Certificate',
                     type: 'PDF/Image',
-                    url: `/${data.gstCertificatePath}`
+                    url: data.gstCertificatePath
                 });
             }
             if (data.panCardPath) {
                 docs.push({
                     name: 'PAN Card',
                     type: 'PDF/Image',
-                    url: `/${data.panCardPath}`
+                    url: data.panCardPath
                 });
             }
             setDocuments(docs);
@@ -163,9 +163,19 @@ const LogisticsProfile = () => {
 
             <main className="container" style={{ padding: '3rem 1rem', maxWidth: '800px', margin: '0 auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-                    <div>
-                        <h1 style={{ fontSize: '2rem', fontWeight: '600', marginBottom: '0.5rem' }}>Logistics Partner Profile</h1>
-                        <p style={{ color: 'var(--text-muted)' }}>Manage your account details and business information</p>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+                        <button
+                            onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }}
+                            className="btn btn-outline"
+                            style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            title="Back to Dashboard"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
+                        <div>
+                            <h1 style={{ fontSize: '2rem', fontWeight: '600', marginBottom: '0.5rem' }}>Company Profile</h1>
+                            <p style={{ color: 'var(--text-muted)' }}>Manage your account details and business information</p>
+                        </div>
                     </div>
                     <div style={{ display: 'flex', gap: '1rem' }}>
                         {!isEditing ? (

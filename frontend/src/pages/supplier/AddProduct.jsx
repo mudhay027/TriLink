@@ -9,6 +9,7 @@ const AddProduct = () => {
     const [formData, setFormData] = useState({
         productName: '',
         category: '',
+        customCategory: '',
         unit: 'Ton',
         price: '',
         availableQty: '',
@@ -43,6 +44,9 @@ const AddProduct = () => {
         const errors = {};
         if (!formData.productName.trim()) errors.productName = 'Product name is required';
         if (!formData.category) errors.category = 'Category is required';
+        if (formData.category === 'Others' && !formData.customCategory.trim()) {
+            errors.customCategory = 'Please enter a custom category';
+        }
         if (!formData.price || formData.price <= 0) errors.price = 'Price must be greater than zero';
         if (!formData.availableQty || formData.availableQty < 1) errors.availableQty = 'Available quantity must be at least 1';
         if (!formData.minOrderQty || formData.minOrderQty < 1) errors.minOrderQty = 'Min order quantity must be at least 1';
@@ -60,7 +64,9 @@ const AddProduct = () => {
 
         const payload = new FormData();
         payload.append('Name', formData.productName);
-        payload.append('Category', formData.category);
+        // Use custom category if "Others" is selected, otherwise use selected category
+        const finalCategory = formData.category === 'Others' ? formData.customCategory : formData.category;
+        payload.append('Category', finalCategory);
         payload.append('Unit', formData.unit);
         payload.append('BasePrice', formData.price);
         payload.append('Quantity', formData.availableQty);
@@ -152,14 +158,47 @@ const AddProduct = () => {
                                     onChange={handleChange}
                                 >
                                     <option value="">Select category</option>
-                                    <option value="steel">Steel</option>
-                                    <option value="cement">Cement</option>
-                                    <option value="aggregates">Aggregates</option>
+                                    <option value="Metals">Metals</option>
+                                    <option value="Plastics & Polymers">Plastics & Polymers</option>
+                                    <option value="Chemicals & Petrochemicals">Chemicals & Petrochemicals</option>
+                                    <option value="Construction Materials">Construction Materials</option>
+                                    <option value="Electrical Components">Electrical Components</option>
+                                    <option value="Electronic Components">Electronic Components</option>
+                                    <option value="Industrial Machinery">Industrial Machinery</option>
+                                    <option value="Industrial Tools & Equipment">Industrial Tools & Equipment</option>
+                                    <option value="Automotive Parts & Components">Automotive Parts & Components</option>
+                                    <option value="Agriculture & Agro Products">Agriculture & Agro Products</option>
+                                    <option value="Fertilizers & Pesticides">Fertilizers & Pesticides</option>
+                                    <option value="Food Processing Raw Materials">Food Processing Raw Materials</option>
+                                    <option value="Textiles Fabrics & Yarns">Textiles Fabrics & Yarns</option>
+                                    <option value="Packaging Materials">Packaging Materials</option>
+                                    <option value="Healthcare Medical Supplies">Healthcare Medical Supplies</option>
+                                    <option value="Pharma Raw Materials">Pharma Raw Materials</option>
+                                    <option value="Office Consumables & Supplies">Office Consumables & Supplies</option>
+                                    <option value="Safety PPE Products">Safety PPE Products</option>
+                                    <option value="Renewable Energy Equipment">Renewable Energy Equipment</option>
+                                    <option value="Handicrafts & Export Goods">Handicrafts & Export Goods</option>
+                                    <option value="Others">Others</option>
                                 </select>
                                 <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }} />
                             </div>
                             {validationErrors.category && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.category}</p>}
                         </div>
+
+                        {formData.category === 'Others' && (
+                            <div className="input-group">
+                                <label className="input-label">Custom Category</label>
+                                <input
+                                    type="text"
+                                    name="customCategory"
+                                    placeholder="Enter your category"
+                                    className={`input-field ${validationErrors.customCategory ? 'error' : ''}`}
+                                    value={formData.customCategory}
+                                    onChange={handleChange}
+                                />
+                                {validationErrors.customCategory && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.customCategory}</p>}
+                            </div>
+                        )}
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                             <div className="input-group">

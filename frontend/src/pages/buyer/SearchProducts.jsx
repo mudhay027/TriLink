@@ -11,6 +11,7 @@ const SearchProducts = () => {
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState('details'); // 'details' or 'counter'
     const [orderQty, setOrderQty] = useState(1);
+    const [sortOption, setSortOption] = useState('relevance');
 
     // Filter States
     const [filters, setFilters] = useState({
@@ -51,7 +52,8 @@ const SearchProducts = () => {
                     imageUrl: p.imageUrl || null,
                     rating: 4.5, // Mock
                     verified: true, // Mock
-                    description: p.description
+                    description: p.description,
+                    status: p.status || 'Active' // Add status field
                 }));
                 setAllProducts(uniqueProducts);
             } catch (error) {
@@ -63,7 +65,7 @@ const SearchProducts = () => {
 
     // Filter Logic
     const filteredProducts = useMemo(() => {
-        return allProducts.filter(product => {
+        let products = allProducts.filter(product => {
             // Keyword Search
             const searchMatch =
                 product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,7 +97,17 @@ const SearchProducts = () => {
 
             return true;
         });
-    }, [searchTerm, filters, allProducts]);
+
+        // Sorting Logic
+        if (sortOption === 'price-low-high') {
+            products = products.sort((a, b) => a.priceValue - b.priceValue);
+        } else if (sortOption === 'price-high-low') {
+            products = products.sort((a, b) => b.priceValue - a.priceValue);
+        }
+        // relevance is default order (no sorting)
+
+        return products;
+    }, [searchTerm, filters, allProducts, sortOption]);
 
     // Handlers
     const handleCategoryChange = (category) => {
@@ -249,7 +261,28 @@ const SearchProducts = () => {
                     <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
                         <h4 style={{ fontSize: '0.9rem', fontWeight: '600', marginBottom: '1rem' }}>Category</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {['Metals', 'Plastics', 'Chemicals', 'Construction', 'Agricultural'].map((cat) => (
+                            {[
+                                'Metals',
+                                'Plastics & Polymers',
+                                'Chemicals & Petrochemicals',
+                                'Construction Materials',
+                                'Electrical Components',
+                                'Electronic Components',
+                                'Industrial Machinery',
+                                'Industrial Tools & Equipment',
+                                'Automotive Parts & Components',
+                                'Agriculture & Agro Products',
+                                'Fertilizers & Pesticides',
+                                'Food Processing Raw Materials',
+                                'Textiles Fabrics & Yarns',
+                                'Packaging Materials',
+                                'Healthcare Medical Supplies',
+                                'Pharma Raw Materials',
+                                'Office Consumables & Supplies',
+                                'Safety PPE Products',
+                                'Renewable Energy Equipment',
+                                'Handicrafts & Export Goods'
+                            ].map((cat) => (
                                 <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem', color: 'var(--text-main)', cursor: 'pointer' }}>
                                     <input
                                         type="checkbox"
@@ -329,11 +362,14 @@ const SearchProducts = () => {
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
                                 Sort by:
-                                <select style={{ border: 'none', background: 'none', fontWeight: '600', cursor: 'pointer' }}>
-                                    <option>Relevance</option>
-                                    <option>Price: Low to High</option>
-                                    <option>Price: High to Low</option>
-                                    <option>Rating: High to Low</option>
+                                <select
+                                    value={sortOption}
+                                    onChange={(e) => setSortOption(e.target.value)}
+                                    style={{ border: 'none', background: 'none', fontWeight: '600', cursor: 'pointer' }}
+                                >
+                                    <option value="relevance">Relevance</option>
+                                    <option value="price-low-high">Price: Low to High</option>
+                                    <option value="price-high-low">Price: High to Low</option>
                                 </select>
                             </div>
                         </div>
@@ -381,6 +417,11 @@ const SearchProducts = () => {
                                             Verified <CheckCircle size={12} fill="#3b82f6" color="white" />
                                         </div>
                                     )}
+                                    {product.status === 'Out of Stock' && (
+                                        <div style={{ position: 'absolute', top: '10px', left: '10px', background: '#ef4444', color: 'white', padding: '0.4rem 0.7rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.25rem', boxShadow: '0 2px 8px rgba(239,68,68,0.3)' }}>
+                                            OUT OF STOCK
+                                        </div>
+                                    )}
                                 </div>
                                 <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
@@ -418,12 +459,36 @@ const SearchProducts = () => {
                                         <MapPin size={14} /> {product.location}
                                     </div>
 
-                                    <button
-                                        onClick={() => handleRequestOrder(product)}
-                                        style={{ marginTop: 'auto', width: '100%', background: 'black', color: 'white', padding: '0.75rem', borderRadius: '6px', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                                    >
-                                        <ShoppingCart size={16} /> Request Offer
-                                    </button>
+                                    {product.status === 'Out of Stock' ? (
+                                        <button
+                                            disabled
+                                            style={{
+                                                marginTop: 'auto',
+                                                width: '100%',
+                                                background: '#cbd5e1',
+                                                color: '#64748b',
+                                                padding: '0.75rem',
+                                                borderRadius: '6px',
+                                                fontSize: '0.9rem',
+                                                fontWeight: '500',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '0.5rem',
+                                                cursor: 'not-allowed',
+                                                opacity: '0.6'
+                                            }}
+                                        >
+                                            Out of Stock
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleRequestOrder(product)}
+                                            style={{ marginTop: 'auto', width: '100%', background: 'black', color: 'white', padding: '0.75rem', borderRadius: '6px', fontSize: '0.9rem', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                                        >
+                                            <ShoppingCart size={16} /> Request Offer
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))}

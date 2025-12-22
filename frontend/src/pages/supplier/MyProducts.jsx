@@ -215,9 +215,26 @@ const MyProducts = () => {
                                 style={{ padding: '0.6rem 2rem 0.6rem 1rem', fontSize: '0.9rem', appearance: 'none', cursor: 'pointer', height: '100%' }}
                             >
                                 <option value="All">All Categories</option>
-                                <option value="Steel">Steel</option>
-                                <option value="Cement">Cement</option>
-                                <option value="Aggregates">Aggregates</option>
+                                <option value="Metals">Metals</option>
+                                <option value="Plastics & Polymers">Plastics & Polymers</option>
+                                <option value="Chemicals & Petrochemicals">Chemicals & Petrochemicals</option>
+                                <option value="Construction Materials">Construction Materials</option>
+                                <option value="Electrical Components">Electrical Components</option>
+                                <option value="Electronic Components">Electronic Components</option>
+                                <option value="Industrial Machinery">Industrial Machinery</option>
+                                <option value="Industrial Tools & Equipment">Industrial Tools & Equipment</option>
+                                <option value="Automotive Parts & Components">Automotive Parts & Components</option>
+                                <option value="Agriculture & Agro Products">Agriculture & Agro Products</option>
+                                <option value="Fertilizers & Pesticides">Fertilizers & Pesticides</option>
+                                <option value="Food Processing Raw Materials">Food Processing Raw Materials</option>
+                                <option value="Textiles Fabrics & Yarns">Textiles Fabrics & Yarns</option>
+                                <option value="Packaging Materials">Packaging Materials</option>
+                                <option value="Healthcare Medical Supplies">Healthcare Medical Supplies</option>
+                                <option value="Pharma Raw Materials">Pharma Raw Materials</option>
+                                <option value="Office Consumables & Supplies">Office Consumables & Supplies</option>
+                                <option value="Safety PPE Products">Safety PPE Products</option>
+                                <option value="Renewable Energy Equipment">Renewable Energy Equipment</option>
+                                <option value="Handicrafts & Export Goods">Handicrafts & Export Goods</option>
                             </select>
                             <ChevronDown size={16} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }} />
                         </div>

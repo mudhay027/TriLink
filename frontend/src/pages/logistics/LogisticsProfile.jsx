@@ -95,6 +95,12 @@ const LogisticsProfile = () => {
     };
 
     const handleSave = async () => {
+        // Validate Contact Person
+        if (profile.contactPerson && !/^[A-Za-z\s]+$/.test(profile.contactPerson)) {
+            alert('Contact person name must contain only alphabets');
+            return;
+        }
+
         try {
             const token = localStorage.getItem('token');
             const response = await fetch('/api/user/profile', {

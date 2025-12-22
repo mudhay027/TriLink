@@ -66,6 +66,14 @@ const Registration = () => {
                 errors.password = 'Password is required';
             } else if (formData.password.length < 6) {
                 errors.password = 'Password must be at least 6 characters';
+            } else if (!/(?=.*[a-z])/.test(formData.password)) {
+                errors.password = 'Password must contain at least one lowercase letter';
+            } else if (!/(?=.*[A-Z])/.test(formData.password)) {
+                errors.password = 'Password must contain at least one uppercase letter';
+            } else if (!/(?=.*\d)/.test(formData.password)) {
+                errors.password = 'Password must contain at least one number';
+            } else if (!/(?=.*[@$!%*?&#])/.test(formData.password)) {
+                errors.password = 'Password must contain at least one special character (@$!%*?&#)';
             }
             if (formData.password !== formData.confirmPassword) {
                 errors.confirmPassword = 'Passwords do not match';
@@ -83,7 +91,11 @@ const Registration = () => {
                 errors.panNumber = 'Invalid PAN format (e.g. ABCDE1234F)';
             }
             if (!formData.address.trim()) errors.address = 'Business address is required';
-            if (!formData.contactPerson.trim()) errors.contactPerson = 'Contact person is required';
+            if (!formData.contactPerson.trim()) {
+                errors.contactPerson = 'Contact person is required';
+            } else if (!/^[A-Za-z\s]+$/.test(formData.contactPerson)) {
+                errors.contactPerson = 'Contact person name must contain only alphabets';
+            }
             if (!formData.contactNumber.trim()) {
                 errors.contactNumber = 'Contact number is required';
             } else if (!/^\d{10}$/.test(formData.contactNumber)) {
@@ -173,8 +185,6 @@ const Registration = () => {
                     TriLink
                 </div>
                 <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', fontSize: '0.9rem', fontWeight: '500' }}>
-                    <a href="#" style={{ color: 'var(--text-muted)' }}>Features</a>
-                    <a href="#" style={{ color: 'var(--text-muted)' }}>Contact</a>
                     <button onClick={() => navigate('/login')} className="btn btn-outline" style={{ padding: '0.5rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem' }}>
                         Login
                     </button>
@@ -240,6 +250,7 @@ const Registration = () => {
                                 formData={formData}
                                 onNext={nextStep}
                                 onPrev={prevStep}
+                                onEditCompanyDetails={() => setStep(2)}
                                 error={error}
                                 loading={loading}
                             />
@@ -341,6 +352,9 @@ const Step1Account = ({ formData, handleChange, onNext, navigate, validationErro
                 onChange={handleChange}
             />
             {validationErrors.password && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.password}</p>}
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                Must be at least 6 characters with 1 uppercase, 1 lowercase, 1 number, and 1 special character (@$!%*?&#)
+            </p>
         </div>
 
         <div className="input-group">
@@ -566,7 +580,7 @@ const FileUpload = ({ label, subLabel, file, onChange, error }) => (
 );
 
 // Step 4: Review
-const Step4Review = ({ formData, onNext, onPrev, error, loading }) => (
+const Step4Review = ({ formData, onNext, onPrev, onEditCompanyDetails, error, loading }) => (
     <div className="fade-in">
         <h2 style={{ fontSize: '1.75rem', fontWeight: '600', marginBottom: '0.5rem' }}>Review Details</h2>
         <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '0.95rem' }}>
@@ -578,7 +592,7 @@ const Step4Review = ({ formData, onNext, onPrev, error, loading }) => (
         <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '2rem', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
                 <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>Company Information</h3>
-                <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', gap: '0.5rem' }} onClick={onPrev}>
+                <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', gap: '0.5rem' }} onClick={onEditCompanyDetails}>
                     <Edit2 size={14} /> Edit
                 </button>
             </div>

@@ -24,6 +24,7 @@ namespace Backend.Models.DTO
 
         [Required(ErrorMessage = "Password is required")]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be at least 6 characters long")]
+        [Backend.Attributes.StrongPassword]
         [DataType(DataType.Password)]
         public string Password { get; set; }
 
@@ -43,6 +44,7 @@ namespace Backend.Models.DTO
         public string? PANNumber { get; set; }
 
         [Required(ErrorMessage = "Contact Person is required")]
+        [RegularExpression(@"^[A-Za-z\s]+$", ErrorMessage = "Contact person name must contain only alphabets")]
         public string? ContactPerson { get; set; }
 
         [Required(ErrorMessage = "Contact Number is required")]

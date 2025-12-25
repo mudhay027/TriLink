@@ -15,13 +15,13 @@ const RoleSelection = () => {
         <div className="fade-in" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             {/* Header */}
             <header style={{ padding: '1.5rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700', fontSize: '1.25rem' }}>
-                    <img src="/trilink_logo.jpg" alt="TriLink" style={{ height: '36px' }} />
-                    <span>TriLink</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '700', fontSize: '1.25rem' }}>
+                    <div style={{ width: '32px', height: '32px', background: 'var(--text-main)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                        <span style={{ fontSize: '1.2rem' }}>T</span>
+                    </div>
+                    TriLink
                 </div>
                 <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', fontSize: '0.9rem', fontWeight: '500' }}>
-                    <a href="#" style={{ color: 'var(--text-muted)' }}>Features</a>
-                    <a href="#" style={{ color: 'var(--text-muted)' }}>Contact</a>
                     <button
                         onClick={() => navigate('/login')}
                         className="btn btn-outline"

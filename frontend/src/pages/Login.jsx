@@ -97,13 +97,7 @@ const Login = () => {
                     <img src="/trilink_logo.jpg" alt="TriLink" style={{ height: '36px' }} />
                     <span>TriLink</span>
                 </div>
-                <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', fontSize: '0.9rem', fontWeight: '500' }}>
-                    <a href="#" style={{ color: 'var(--text-muted)' }}>Features</a>
-                    <a href="#" style={{ color: 'var(--text-muted)' }}>Contact</a>
-                    <button className="btn btn-primary" style={{ padding: '0.5rem 1.25rem', borderRadius: '8px', fontSize: '0.9rem' }}>
-                        Login
-                    </button>
-                </div>
+
             </header>
 
             {/* Main Content */}
@@ -172,10 +166,7 @@ const Login = () => {
                             {validationErrors.password && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.password}</p>}
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', fontSize: '0.9rem' }}>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-muted)' }}>
-                                <input type="checkbox" /> Remember me
-                            </label>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem', fontSize: '0.9rem' }}>
                             <a href="#" style={{ color: 'var(--text-main)', fontWeight: '600' }}>Forgot password?</a>
                         </div>
 

@@ -596,7 +596,7 @@ const SupplierOrders = () => {
                                         {/* Product Image */}
                                         <div style={{ flexShrink: 0 }}>
                                             <img
-                                                src={`http://localhost:5081${req.productImage}`}
+                                                src={req.productImage || 'https://via.placeholder.com/120?text=No+Image'}
                                                 alt={req.product}
                                                 style={{
                                                     width: '120px',
@@ -687,7 +687,7 @@ const SupplierOrders = () => {
                                         {/* Product Image */}
                                         <div style={{ flexShrink: 0 }}>
                                             <img
-                                                src={`http://localhost:5081${req.productImage}`}
+                                                src={req.productImage || 'https://via.placeholder.com/120?text=No+Image'}
                                                 alt={req.product}
                                                 style={{
                                                     width: '120px',
@@ -775,7 +775,7 @@ const SupplierOrders = () => {
                                     {/* Product Image */}
                                     <div style={{ flexShrink: 0 }}>
                                         <img
-                                            src={`http://localhost:5081${req.productImage}`}
+                                            src={req.productImage || 'https://via.placeholder.com/120?text=No+Image'}
                                             alt={req.product}
                                             style={{
                                                 width: '120px',

@@ -109,7 +109,16 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// Serve static files from wwwroot folder (includes uploads)
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        // Add CORS headers for images
+        ctx.Context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+    }
+});
 
 // Prevent Browser Caching for API responses to ensure fresh data on new login
 app.Use(async (context, next) =>

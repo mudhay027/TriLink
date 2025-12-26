@@ -17,7 +17,7 @@ namespace Backend.Services
 
     public class TransportCostService : ITransportCostService
     {
-        // Vehicle configurations: Name, MaxCapacityKg, FuelPer100Km, MaintenancePerKm, DriverHourlyRate
+        // vehicle setup: name, max weight, fuel usage, maintenance cost, driver pay per hour
         private static readonly Dictionary<string, VehicleConfig> Vehicles = new()
         {
             ["LCV"] = new("Light Commercial Vehicle", 2000, 12, 2.0, 150),
@@ -29,7 +29,7 @@ namespace Backend.Services
 
         private const double DieselPricePerLiter = 95.0;
         private const double TollRatePerKm = 2.0;
-        private const int DimFactor = 5000; // Dimensional weight divisor for road freight
+        private const int DimFactor = 5000; // this is the dimensional weight divisor thing
 
         public CostBreakdown CalculateCost(
             double distanceKm,
@@ -43,7 +43,7 @@ namespace Backend.Services
             string pickupCity,
             string dropCity)
         {
-            // 1. Calculate Chargeable Weight (max of actual vs volumetric)
+            // step 1: figure out the chargeable weight (whichever's higher - actual or volumetric)
             decimal volumetricWeight = 0;
             if (length.HasValue && width.HasValue && height.HasValue)
             {
@@ -51,43 +51,43 @@ namespace Backend.Services
             }
             decimal chargeableWeight = Math.Max(totalWeight, volumetricWeight);
 
-            // 2. Detect terrain type
+            // step 2: check if it's a mountain route or not
             bool isMountain = IsMountainRoute(pickupCity, dropCity);
             double terrainFactor = isMountain ? 1.5 : 1.0;
 
-            // 3. Select appropriate vehicle
+            // step 3: pick the right vehicle for the job
             var vehicle = SelectVehicle(chargeableWeight, distanceKm, isMountain);
 
-            // 4. Calculate Load Factor (heavier load = more fuel)
+            // step 4: calculate how much extra fuel we need based on weight
             double loadFactor = 1 + ((double)chargeableWeight / vehicle.MaxCapacityKg) * 0.25;
 
-            // 5. Calculate Fuel Cost
+            // step 5: fuel cost calculation time
             double adjustedConsumption = vehicle.FuelConsumptionPer100Km * loadFactor * terrainFactor;
             double fuelLiters = (distanceKm / 100) * adjustedConsumption;
             double fuelCost = fuelLiters * DieselPricePerLiter;
 
-            // 6. Calculate Driver Cost
+            // step 6: driver cost
             double driverCost = durationHours * vehicle.DriverHourlyRate;
 
-            // 7. Calculate Toll Cost (only for highway routes > 100km)
+            // step 7: toll charges (only if we're going more than 100km on highways)
             double tollCost = distanceKm > 100 ? distanceKm * TollRatePerKm : 0;
 
-            // 8. Calculate Maintenance Cost
+            // step 8: maintenance costs
             double maintenanceCost = distanceKm * vehicle.MaintenanceCostPerKm;
 
-            // 9. Calculate Subtotal
+            // step 9: adding everything up so far
             double subtotal = fuelCost + driverCost + tollCost + maintenanceCost;
 
-            // 10. Calculate Insurance (base 2% + premiums for special cargo)
+            // step 10: insurance time (base 2%, more if cargo is fragile or expensive)
             double insuranceRate = 0.02;
             if (isFragile) insuranceRate += 0.015;
             if (isHighValue) insuranceRate += 0.025;
             double insuranceCost = subtotal * insuranceRate;
 
-            // 11. Add Business Overhead (10%)
+            // step 11: business overhead (we gotta make profit somehow lol)
             double overhead = (subtotal + insuranceCost) * 0.10;
 
-            // 12. Calculate Final Total
+            // step 12: final total woohoo
             double totalCost = subtotal + insuranceCost + overhead;
 
             return new CostBreakdown
@@ -113,10 +113,10 @@ namespace Backend.Services
 
         private VehicleConfig SelectVehicle(decimal chargeableWeight, double distanceKm, bool isMountain)
         {
-            // Mountain routes always use 4x4
+            // mountain routes always get the 4x4, no questions asked
             if (isMountain) return Vehicles["4x4"];
 
-            // Select by weight capacity
+            // picking vehicle based on how heavy the stuff is
             if (chargeableWeight > 16000) return Vehicles["MAT"];
             if (chargeableWeight > 7500) return Vehicles["HDT"];
             if (chargeableWeight > 2000) return Vehicles["MGV"];

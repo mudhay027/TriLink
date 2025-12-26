@@ -31,7 +31,7 @@ namespace Backend.Controllers
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromForm] RegisterRequestDto registerRequestDto)
         {
-            // Handle File Uploads
+            // alright let's handle the file uploads here
             if (registerRequestDto.GSTCertificateFile != null)
             {
                 var fileName = Guid.NewGuid().ToString() + Path.GetExtension(registerRequestDto.GSTCertificateFile.FileName);
@@ -45,8 +45,8 @@ namespace Backend.Controllers
                     await registerRequestDto.GSTCertificateFile.CopyToAsync(stream);
                 }
 
-                // Set the URL (Assuming local hosting, you might want to return a full URL or relative path)
-                // For now, storing relative path accessible via static files
+                // ok so we're setting up the URL here
+                // just storing the path for now, should work fine with static files
                 var request = HttpContext.Request;
                 var domain = $"{request.Scheme}://{request.Host}";
                 registerRequestDto.GSTCertificateUrl = $"{domain}/uploads/{fileName}";
@@ -79,7 +79,7 @@ namespace Backend.Controllers
                 return BadRequest(new { Message = "Something went wrong" });
             }
 
-            //return Ok(new { Message = "User registered successfully! Please login." });
+            // not sending this message anymore, logging them in directly instead
 
             var jwtToken = _tokenRepository.CreateJWTToken(user);
 
@@ -132,7 +132,7 @@ namespace Backend.Controllers
                     });
                 }
 
-                // Check if email already exists
+                // gotta check if this email is already taken
                 var existingUser = await _userRepository.GetByEmailAsync(request.Email);
                 if (existingUser != null)
                 {
@@ -143,7 +143,7 @@ namespace Backend.Controllers
                     });
                 }
 
-                // Generate and send OTP
+                // time to generate and send the OTP
                 await _otpService.GenerateOtpAsync(request.Email);
 
                 return Ok(new OtpResponseDto 
@@ -202,6 +202,105 @@ namespace Backend.Controllers
                 { 
                     Success = false, 
                     Message = ex.Message 
+                });
+            }
+        }
+
+        [HttpPost("forgot-password-otp")]
+        public async Task<IActionResult> ForgotPasswordOtp([FromBody] ForgotPasswordRequestDto request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Email))
+                {
+                    return BadRequest(new OtpResponseDto
+                    {
+                        Success = false,
+                        Message = "Email is required"
+                    });
+                }
+
+                // need to make sure email exists - opposite of registration lol
+                var existingUser = await _userRepository.GetByEmailAsync(request.Email);
+                if (existingUser == null)
+                {
+                    return BadRequest(new OtpResponseDto
+                    {
+                        Success = false,
+                        Message = "Email not registered. Please sign up first."
+                    });
+                }
+
+                // cool let's generate and send the OTP
+                await _otpService.GenerateOtpAsync(request.Email);
+
+                return Ok(new OtpResponseDto
+                {
+                    Success = true,
+                    Message = "OTP sent successfully to your email",
+                    ExpiresInSeconds = 600 // 10 minutes
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new OtpResponseDto
+                {
+                    Success = false,
+                    Message = ex.Message
+                });
+            }
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Email) || 
+                    string.IsNullOrWhiteSpace(request.Otp) || 
+                    string.IsNullOrWhiteSpace(request.NewPassword))
+                {
+                    return BadRequest(new OtpResponseDto
+                    {
+                        Success = false,
+                        Message = "Email, OTP, and new password are required"
+                    });
+                }
+
+                // first things first, verify the OTP
+                var isOtpValid = await _otpService.VerifyOtpAsync(request.Email, request.Otp);
+                if (!isOtpValid)
+                {
+                    return BadRequest(new OtpResponseDto
+                    {
+                        Success = false,
+                        Message = "Invalid or expired OTP. Please try again."
+                    });
+                }
+
+                // now let's update the password in database
+                var passwordUpdated = await _userRepository.UpdatePasswordAsync(request.Email, request.NewPassword);
+                if (!passwordUpdated)
+                {
+                    return BadRequest(new OtpResponseDto
+                    {
+                        Success = false,
+                        Message = "Failed to update password. Please try again."
+                    });
+                }
+
+                return Ok(new OtpResponseDto
+                {
+                    Success = true,
+                    Message = "Password reset successfully"
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new OtpResponseDto
+                {
+                    Success = false,
+                    Message = ex.Message
                 });
             }
         }

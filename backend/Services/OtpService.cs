@@ -26,7 +26,7 @@ namespace Backend.Services
         {
             try
             {
-                // Check rate limiting
+                // first gotta check if they're spamming OTP requests lol
                 var rateLimitPerHour = int.Parse(_configuration["Otp:RateLimitPerHour"] ?? "3");
                 var recentOtps = await _otpRepository.GetRecentOtpsAsync(email, DateTime.UtcNow.AddHours(-1));
                 
@@ -35,18 +35,18 @@ namespace Backend.Services
                     throw new Exception($"Rate limit exceeded. Maximum {rateLimitPerHour} OTP requests per hour.");
                 }
 
-                // Generate 6-digit OTP
+                // ok let's generate a random 6-digit OTP
                 var random = new Random();
                 var otp = random.Next(100000, 999999).ToString();
 
-                // Get expiry time from configuration
+                // grabbing expiry time from config
                 var expiryMinutes = int.Parse(_configuration["Otp:ExpiryMinutes"] ?? "10");
                 var expiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes);
 
-                // Save OTP to database
+                // saving this OTP to database
                 await _otpRepository.CreateOtpAsync(email, otp, expiresAt);
 
-                // Send OTP via email
+                // now sending the OTP via email
                 var emailSent = await _emailService.SendOtpEmailAsync(email, otp);
                 
                 if (!emailSent)
@@ -76,21 +76,21 @@ namespace Backend.Services
                     return false;
                 }
 
-                // Check if already verified
+                // check if they already verified it before
                 if (verification.IsVerified)
                 {
                     _logger.LogWarning($"OTP already verified for email: {email}");
                     return true;
                 }
 
-                // Check if expired
+                // make sure the OTP hasn't expired yet
                 if (DateTime.UtcNow > verification.ExpiresAt)
                 {
                     _logger.LogWarning($"OTP expired for email: {email}");
                     return false;
                 }
 
-                // Check max attempts
+                // checking if they've tried too many times already
                 var maxAttempts = int.Parse(_configuration["Otp:MaxAttempts"] ?? "3");
                 if (verification.AttemptCount >= maxAttempts)
                 {
@@ -98,17 +98,17 @@ namespace Backend.Services
                     return false;
                 }
 
-                // Increment attempt count
+                // bumping up the attempt count
                 await _otpRepository.IncrementAttemptCountAsync(verification.Id);
 
-                // Verify OTP
+                // time to actually verify the OTP
                 if (verification.OTP != otp)
                 {
                     _logger.LogWarning($"Invalid OTP for email: {email}");
                     return false;
                 }
 
-                // Mark as verified
+                // sweet! mark it as verified
                 await _otpRepository.MarkAsVerifiedAsync(verification.Id);
                 _logger.LogInformation($"OTP verified successfully for email: {email}");
                 return true;

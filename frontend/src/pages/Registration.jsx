@@ -120,11 +120,11 @@ const Registration = () => {
     };
 
     const nextStep = () => {
-        // Check OTP verification FIRST before field validation
+        // gotta check OTP verification FIRST before anything else
         if (step === 1 && !otpVerified) {
             setError('⚠️ Please verify your email with OTP before you can register!');
             setValidationErrors({ email: 'Email verification required' });
-            // Scroll to top to show error
+            // scroll to top so they can see the error
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -135,12 +135,12 @@ const Registration = () => {
             handleRegister();
         } else {
             setStep(step + 1);
-            setError(''); // Clear error when moving to next step
+            setError(''); // clear error when moving to next step
         }
     };
     const prevStep = () => setStep(step - 1);
 
-    // Handle OTP countdown timer
+    // managing the OTP countdown timer
     React.useEffect(() => {
         let timer;
         if (countdown > 0) {
@@ -167,16 +167,16 @@ const Registration = () => {
                 body: JSON.stringify({ email: formData.email })
             });
 
-            // Parse JSON response for both success and error cases
+            // parsing the JSON for both success and errors
             const data = await response.json();
 
             if (response.ok && data.success) {
                 setOtpSent(true);
-                setCountdown(600); // 10 minutes
+                setCountdown(600); // 10 minutes timer starts now
                 setCanResendOtp(false);
                 setOtpError('');
             } else {
-                // Handle error responses (400, 500, etc.)
+                // handling error responses (400, 500, whatever)
                 if (data.message && data.message.toLowerCase().includes('already registered')) {
                     setOtpError('⚠️ This email is already registered. Please login instead.');
                 } else {

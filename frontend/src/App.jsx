@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import RoleSelection from './pages/RoleSelection';
 import Registration from './pages/Registration';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import SupplierDashboard from './pages/supplier/SupplierDashboard';
 import MyProducts from './pages/supplier/MyProducts';
@@ -44,6 +45,7 @@ function App() {
       <Routes>
         <Route path="/" element={<RoleSelection />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/register" element={<Registration />} />
         <Route path="/dashboard" element={<Dashboard />} />
 

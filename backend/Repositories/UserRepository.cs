@@ -58,5 +58,19 @@ namespace Backend.Repositories
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.Username == email || u.Email == email);
         }
+
+        public async Task<bool> UpdatePasswordAsync(string email, string newPassword)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == email || u.Email == email);
+            if (user == null)
+            {
+                return false;
+            }
+
+            // Hash the new password with BCrypt
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

@@ -9,5 +9,6 @@ namespace Backend.Repositories
         Task<User?> GetByIdAsync(Guid id);
         Task<User?> UpdateAsync(User user);
         Task<User?> GetByEmailAsync(string email);
+        Task<bool> UpdatePasswordAsync(string email, string newPassword);
     }
 }

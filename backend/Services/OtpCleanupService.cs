@@ -7,7 +7,7 @@ namespace Backend.Services
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<OtpCleanupService> _logger;
-        private readonly TimeSpan _cleanupInterval = TimeSpan.FromHours(1); // Run cleanup every hour
+        private readonly TimeSpan _cleanupInterval = TimeSpan.FromHours(1); // runs cleanup every hour
 
         public OtpCleanupService(IServiceProvider serviceProvider, ILogger<OtpCleanupService> logger)
         {
@@ -25,13 +25,13 @@ namespace Backend.Services
                 {
                     await CleanupExpiredOtpsAsync();
                     
-                    // Wait for the next cleanup cycle
+                    // chill for a bit before next cleanup cycle
                     await Task.Delay(_cleanupInterval, stoppingToken);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError($"Error in OTP cleanup service: {ex.Message}");
-                    // Wait a bit before retrying to avoid rapid retry loops
+                    // waiting a bit so we don't spam retries lol
                     await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
                 }
             }
@@ -46,7 +46,7 @@ namespace Backend.Services
                 using var scope = _serviceProvider.CreateScope();
                 var dbContext = scope.ServiceProvider.GetRequiredService<TriLinkDbContext>();
 
-                // Delete OTPs that expired more than 1 hour ago
+                // cleaning up OTPs that expired more than an hour ago
                 var cutoffTime = DateTime.UtcNow.AddHours(-1);
                 
                 var expiredOtps = await dbContext.EmailVerifications

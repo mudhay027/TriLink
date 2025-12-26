@@ -167,7 +167,7 @@ const Login = () => {
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem', fontSize: '0.9rem' }}>
-                            <a href="#" style={{ color: 'var(--text-main)', fontWeight: '600' }}>Forgot password?</a>
+                            <span onClick={() => navigate('/forgot-password')} style={{ color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Forgot password?</span>
                         </div>
 
                         <button

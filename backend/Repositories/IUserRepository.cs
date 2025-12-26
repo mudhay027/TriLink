@@ -8,5 +8,6 @@ namespace Backend.Repositories
         Task<User?> RegisterAsync(User user, string password); // Password for hashing
         Task<User?> GetByIdAsync(Guid id);
         Task<User?> UpdateAsync(User user);
+        Task<User?> GetByEmailAsync(string email);
     }
 }

@@ -82,6 +82,14 @@ builder.Services.AddScoped<IRouteService, RouteService>();
 builder.Services.AddScoped<IAIService, AIService>();
 builder.Services.AddScoped<ITransportCostService, TransportCostService>();
 
+// Register OTP and Email services
+builder.Services.AddScoped<IOtpRepository, OtpRepository>();
+builder.Services.AddScoped<IOtpService, OtpService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Register OTP Cleanup Background Service
+builder.Services.AddHostedService<OtpCleanupService>();
+
 builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

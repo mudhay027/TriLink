@@ -31,6 +31,15 @@ const Registration = () => {
     const [error, setError] = useState('');
     const [validationErrors, setValidationErrors] = useState({});
 
+    // OTP States
+    const [otpSent, setOtpSent] = useState(false);
+    const [otpValue, setOtpValue] = useState('');
+    const [otpVerified, setOtpVerified] = useState(false);
+    const [otpLoading, setOtpLoading] = useState(false);
+    const [otpError, setOtpError] = useState('');
+    const [countdown, setCountdown] = useState(0);
+    const [canResendOtp, setCanResendOtp] = useState(false);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData({ ...formData, [name]: value });
@@ -111,15 +120,107 @@ const Registration = () => {
     };
 
     const nextStep = () => {
+        // Check OTP verification FIRST before field validation
+        if (step === 1 && !otpVerified) {
+            setError('⚠️ Please verify your email with OTP before you can register!');
+            setValidationErrors({ email: 'Email verification required' });
+            // Scroll to top to show error
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
         if (!validateStep(step)) return;
 
         if (step === 4) {
             handleRegister();
         } else {
             setStep(step + 1);
+            setError(''); // Clear error when moving to next step
         }
     };
     const prevStep = () => setStep(step - 1);
+
+    // Handle OTP countdown timer
+    React.useEffect(() => {
+        let timer;
+        if (countdown > 0) {
+            timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+        } else if (countdown === 0 && otpSent) {
+            setCanResendOtp(true);
+        }
+        return () => clearTimeout(timer);
+    }, [countdown, otpSent]);
+
+    const handleSendOtp = async () => {
+        if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) {
+            setOtpError('Please enter a valid email address');
+            return;
+        }
+
+        setOtpLoading(true);
+        setOtpError('');
+
+        try {
+            const response = await fetch('/api/auth/send-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: formData.email })
+            });
+
+            // Parse JSON response for both success and error cases
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                setOtpSent(true);
+                setCountdown(600); // 10 minutes
+                setCanResendOtp(false);
+                setOtpError('');
+            } else {
+                // Handle error responses (400, 500, etc.)
+                if (data.message && data.message.toLowerCase().includes('already registered')) {
+                    setOtpError('⚠️ This email is already registered. Please login instead.');
+                } else {
+                    setOtpError(data.message || 'Failed to send OTP. Please try again.');
+                }
+            }
+        } catch (err) {
+            console.error('OTP send error:', err);
+            setOtpError('Failed to send OTP. Please check your connection and try again.');
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        if (!otpValue || otpValue.length !== 6) {
+            setOtpError('Please enter a valid 6-digit OTP');
+            return;
+        }
+
+        setOtpLoading(true);
+        setOtpError('');
+
+        try {
+            const response = await fetch('/api/auth/verify-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: formData.email, otp: otpValue })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                setOtpVerified(true);
+                setOtpError('');
+            } else {
+                setOtpError(data.message || 'Invalid OTP. Please try again.');
+            }
+        } catch (err) {
+            setOtpError('Failed to verify OTP. Please try again.');
+        } finally {
+            setOtpLoading(false);
+        }
+    };
 
     const handleRegister = async () => {
         setLoading(true);
@@ -224,6 +325,17 @@ const Registration = () => {
                                 onNext={nextStep}
                                 navigate={navigate}
                                 validationErrors={validationErrors}
+                                otpSent={otpSent}
+                                otpValue={otpValue}
+                                setOtpValue={setOtpValue}
+                                otpVerified={otpVerified}
+                                otpLoading={otpLoading}
+                                otpError={otpError}
+                                countdown={countdown}
+                                canResendOtp={canResendOtp}
+                                onSendOtp={handleSendOtp}
+                                onVerifyOtp={handleVerifyOtp}
+                                error={error}
                             />
                         )}
                         {step === 2 && (
@@ -308,79 +420,195 @@ const ProgressIndicator = ({ currentStep }) => {
     );
 };
 
-// Step 1: Create Account
-const Step1Account = ({ formData, handleChange, onNext, navigate, validationErrors }) => (
-    <div className="fade-in">
-        <h2 style={{ fontSize: '1.75rem', fontWeight: '600', marginBottom: '2rem' }}>Create your account</h2>
+// Step 1: Create Account with OTP Verification
+const Step1Account = ({
+    formData,
+    handleChange,
+    onNext,
+    navigate,
+    validationErrors,
+    otpSent,
+    otpValue,
+    setOtpValue,
+    otpVerified,
+    otpLoading,
+    otpError,
+    countdown,
+    canResendOtp,
+    onSendOtp,
+    onVerifyOtp,
+    error
+}) => {
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
-        <div className="input-group">
-            <label className="input-label">Full Name</label>
-            <input
-                type="text"
-                name="fullName"
-                placeholder="Enter your full name"
-                className={`input-field ${validationErrors.fullName ? 'error' : ''}`}
-                value={formData.fullName}
-                onChange={handleChange}
-            />
-            {validationErrors.fullName && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.fullName}</p>}
-        </div>
+    return (
+        <div className="fade-in">
+            <h2 style={{ fontSize: '1.75rem', fontWeight: '600', marginBottom: '2rem' }}>Create your account</h2>
 
-        <div className="input-group">
-            <label className="input-label">Email Address</label>
-            <input
-                type="email"
-                name="email"
-                placeholder="Enter your email"
-                className={`input-field ${validationErrors.email ? 'error' : ''}`}
-                value={formData.email}
-                onChange={handleChange}
-            />
-            {validationErrors.email && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.email}</p>}
-        </div>
+            {/* Error Banner */}
+            {error && (
+                <div style={{
+                    background: '#fee2e2',
+                    border: '2px solid #ef4444',
+                    borderRadius: '12px',
+                    padding: '1rem 1.5rem',
+                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem'
+                }}>
+                    <div style={{ fontSize: '1.5rem' }}>⚠️</div>
+                    <p style={{ margin: 0, color: '#991b1b', fontWeight: '600', fontSize: '0.95rem' }}>{error}</p>
+                </div>
+            )}
 
-        <div className="input-group">
-            <label className="input-label">Password</label>
-            <input
-                type="password"
-                name="password"
-                placeholder="Create a password"
-                className={`input-field ${validationErrors.password ? 'error' : ''}`}
-                value={formData.password}
-                onChange={handleChange}
-            />
-            {validationErrors.password && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.password}</p>}
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
-                Must be at least 6 characters with 1 uppercase, 1 lowercase, 1 number, and 1 special character (@$!%*?&#)
+            <div className="input-group">
+                <label className="input-label">Full Name</label>
+                <input
+                    type="text"
+                    name="fullName"
+                    placeholder="Enter your full name"
+                    className={`input-field ${validationErrors.fullName ? 'error' : ''}`}
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    disabled={otpVerified}
+                />
+                {validationErrors.fullName && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.fullName}</p>}
+            </div>
+
+            <div className="input-group">
+                <label className="input-label">Email Address</label>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1 }}>
+                        <input
+                            type="email"
+                            name="email"
+                            placeholder="Enter your email"
+                            className={`input-field ${validationErrors.email ? 'error' : ''}`}
+                            value={formData.email}
+                            onChange={handleChange}
+                            disabled={otpSent}
+                        />
+                        {validationErrors.email && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.email}</p>}
+                        {otpError && !otpSent && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem', fontWeight: '600' }}>{otpError}</p>}
+                    </div>
+                    {!otpSent && (
+                        <button
+                            onClick={onSendOtp}
+                            className="btn btn-primary"
+                            disabled={otpLoading || !formData.email || !/\S+@\S+\.\S+/.test(formData.email)}
+                            style={{ padding: '0.75rem 1.5rem', minWidth: '140px', whiteSpace: 'nowrap' }}
+                        >
+                            {otpLoading ? 'Sending...' : 'Generate OTP'}
+                        </button>
+                    )}
+                    {otpVerified && (
+                        <div style={{ padding: '0.75rem 1.5rem', background: '#10b981', color: 'white', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '600' }}>
+                            <Check size={20} /> Verified
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {otpSent && !otpVerified && (
+                <div className="input-group" style={{ background: '#f0f9ff', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e0f2fe' }}>
+                    <label className="input-label">Enter OTP</label>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                        We've sent a 6-digit OTP to your email. Please check your inbox.
+                    </p>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                        <div style={{ flex: 1 }}>
+                            <input
+                                type="text"
+                                placeholder="Enter 6-digit OTP"
+                                className="input-field"
+                                value={otpValue}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                    setOtpValue(val);
+                                }}
+                                maxLength={6}
+                                style={{ letterSpacing: '0.5rem', fontSize: '1.2rem', textAlign: 'center' }}
+                            />
+                            {otpError && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{otpError}</p>}
+                        </div>
+                        <button
+                            onClick={onVerifyOtp}
+                            className="btn btn-primary"
+                            disabled={otpLoading || otpValue.length !== 6}
+                            style={{ padding: '0.75rem 1.5rem', minWidth: '120px' }}
+                        >
+                            {otpLoading ? 'Verifying...' : 'Verify OTP'}
+                        </button>
+                    </div>
+                    <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <p style={{ fontSize: '0.85rem', color: countdown > 60 ? 'var(--text-main)' : 'red', fontWeight: '600' }}>
+                            {countdown > 0 ? `Time remaining: ${formatTime(countdown)}` : 'OTP Expired'}
+                        </p>
+                        {canResendOtp && (
+                            <button
+                                onClick={onSendOtp}
+                                className="btn btn-outline"
+                                disabled={otpLoading}
+                                style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                            >
+                                Resend OTP
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            <div className="input-group">
+                <label className="input-label">Password</label>
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Create a password"
+                    className={`input-field ${validationErrors.password ? 'error' : ''}`}
+                    value={formData.password}
+                    onChange={handleChange}
+                    disabled={!otpVerified}
+                />
+                {validationErrors.password && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.password}</p>}
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                    Must be at least 6 characters with 1 uppercase, 1 lowercase, 1 number, and 1 special character (@$!%*?&#)
+                </p>
+            </div>
+
+            <div className="input-group">
+                <label className="input-label">Confirm Password</label>
+                <input
+                    type="password"
+                    name="confirmPassword"
+                    placeholder="Confirm your password"
+                    className={`input-field ${validationErrors.confirmPassword ? 'error' : ''}`}
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    disabled={!otpVerified}
+                />
+                {validationErrors.confirmPassword && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.confirmPassword}</p>}
+            </div>
+
+            <button
+                onClick={onNext}
+                className="btn btn-primary"
+                style={{ width: '100%', marginTop: '1rem', padding: '1rem' }}
+                disabled={!otpVerified}
+            >
+                Register
+            </button>
+
+            <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                Already have an account? <span onClick={() => navigate('/login')} style={{ color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Login</span>
             </p>
         </div>
-
-        <div className="input-group">
-            <label className="input-label">Confirm Password</label>
-            <input
-                type="password"
-                name="confirmPassword"
-                placeholder="Confirm your password"
-                className={`input-field ${validationErrors.confirmPassword ? 'error' : ''}`}
-                value={formData.confirmPassword}
-                onChange={handleChange}
-            />
-            {validationErrors.confirmPassword && <p style={{ color: 'red', fontSize: '0.8rem', marginTop: '0.25rem' }}>{validationErrors.confirmPassword}</p>}
-        </div>
-
-        <button
-            onClick={onNext}
-            className="btn btn-primary"
-            style={{ width: '100%', marginTop: '1rem', padding: '1rem' }}
-        >
-            Register
-        </button>
-
-        <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-            Already have an account? <span onClick={() => navigate('/login')} style={{ color: 'var(--text-main)', fontWeight: '600', cursor: 'pointer' }}>Login</span>
-        </p>
-    </div>
-);
+    );
+};
 
 // Step 2: Company Details
 const Step2CompanyDetails = ({ formData, handleChange, onNext, validationErrors }) => (

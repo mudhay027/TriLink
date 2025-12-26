@@ -21,6 +21,7 @@ namespace Backend.Data
         public DbSet<JobHistory> JobHistories { get; set; }
         public DbSet<ChatThread> ChatThreads { get; set; }
         public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<EmailVerification> EmailVerifications { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

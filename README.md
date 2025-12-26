@@ -768,7 +768,10 @@ npm run lint
 
 ## 👥 Team
 
-[Add your team information here]
+1. Balaji U
+2. Parthiban
+3. Mohanraj
+4. Udhay M
 
 ---
 

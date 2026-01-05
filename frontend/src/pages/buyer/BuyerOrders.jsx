@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../../api/api';
-import { Bell, User, Package, Calendar, MapPin, FileText, DollarSign } from 'lucide-react';
+import { Bell, User, Package, Calendar, MapPin, FileText, DollarSign, CheckCircle } from 'lucide-react';
 import Toast from '../../components/Toast';
 import { useToast } from '../../hooks/useNotification';
 import '../../index.css';

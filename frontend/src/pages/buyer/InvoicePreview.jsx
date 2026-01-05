@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Bell, User, ArrowLeft } from 'lucide-react';
+import { Bell, User, ArrowLeft, Printer, Download } from 'lucide-react';
 import Toast from '../../components/Toast';
 import { useToast } from '../../hooks/useNotification';
 import html2pdf from 'html2pdf.js';

@@ -119,7 +119,7 @@ const SupplierLogisticsJobCreation = () => {
                 showSuccess('Logistics Job Created Successfully!');
                 // Optionally redirect to view created jobs
                 const userId = localStorage.getItem('userId');
-                navigate(`/ supplier / logistics - job - management / ${userId} `);
+                navigate(`/supplier/logistics-job-management/${userId}`);
             } else {
                 showWarning(`Note: Backend might not support all fields yet. Response: ${response.status}`);
             }
@@ -145,9 +145,9 @@ const SupplierLogisticsJobCreation = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
                     <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</div>
                     <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>
-                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/ supplier / dashboard / ${userId} `); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Dashboard</a>
-                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/ supplier / products / ${userId} `); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Products</a>
-                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/ supplier / orders / ${userId} `); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Orders</a>
+                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/supplier/dashboard/${userId}`); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Dashboard</a>
+                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/supplier/products/${userId}`); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Products</a>
+                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/supplier/orders/${userId}`); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Orders</a>
                         <a href="#" style={{ color: 'var(--text-main)', cursor: 'default' }}>Logistics Jobs</a>
                     </div>
                 </div>
@@ -155,7 +155,7 @@ const SupplierLogisticsJobCreation = () => {
                     <Bell size={20} color="var(--text-muted)" />
                     <div
                         style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                        onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/ supplier / profile / ${userId} `); }}
+                        onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/supplier/profile/${userId}`); }}
                     >
                         <User size={18} color="var(--text-muted)" />
                     </div>
@@ -172,7 +172,7 @@ const SupplierLogisticsJobCreation = () => {
                         <button
                             onClick={() => {
                                 const userId = localStorage.getItem('userId');
-                                navigate(`/ supplier / logistics - job - management / ${userId} `);
+                                navigate(`/supplier/logistics-job-management/${userId}`);
                             }}
                             className="btn btn-outline"
                             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', fontSize: '1rem' }}
@@ -209,7 +209,7 @@ const SupplierLogisticsJobCreation = () => {
                             <button
                                 onClick={() => {
                                     const userId = localStorage.getItem('userId');
-                                    navigate(`/ supplier / logistics - job - management / ${userId} `);
+                                    navigate(`/supplier/logistics-job-management/${userId}`);
                                 }}
                                 className="btn btn-outline"
                                 style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}

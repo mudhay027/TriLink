@@ -39,13 +39,12 @@ const LogisticsDashboard = () => {
                     setAssignedJobsCount(data.length);
                 }
 
-                // Fetch Quotes Submitted (only Pending quotes, not Accepted/Rejected)
+                // Fetch Quotes Submitted (all quotes regardless of status)
                 const quotesRes = await fetch('http://localhost:5081/api/BuyerLogisticsJob/my-quotes', { headers });
                 if (quotesRes.ok) {
                     const quotedJobs = await quotesRes.json();
-                    // Only count quotes that are still "Pending" (actually quoted, not accepted/rejected)
-                    const pendingQuotes = quotedJobs.filter(quote => quote.status === 'Pending');
-                    setQuotesSubmittedCount(pendingQuotes.length);
+                    // Count all submitted quotes (Pending, Accepted, Rejected)
+                    setQuotesSubmittedCount(quotedJobs.length);
 
                     // Map API jobs to match display format
                     const mappedQuotedJobs = quotedJobs.map(job => ({
@@ -91,7 +90,7 @@ const LogisticsDashboard = () => {
     const stats = [
         { label: 'Available Jobs', value: availableJobsCount, icon: <Truck size={24} />, route: `/logistics/available-jobs/${localStorage.getItem('userId')}` },
         { label: 'Assigned Jobs', value: assignedJobsCount, icon: <CheckCircle size={24} />, route: `/logistics/assigned-jobs/${localStorage.getItem('userId')}` },
-        { label: 'Quotes Submitted', value: quotesSubmittedCount, icon: <FileText size={24} />, route: `/logistics/available-jobs/${localStorage.getItem('userId')}`, state: { filter: 'Quoted' } },
+        { label: 'Quotes Submitted', value: quotesSubmittedCount, icon: <FileText size={24} />, route: `/logistics/quoted-jobs/${localStorage.getItem('userId')}` },
     ];
 
     return (

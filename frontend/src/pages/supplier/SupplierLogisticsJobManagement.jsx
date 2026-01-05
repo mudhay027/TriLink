@@ -62,6 +62,35 @@ const SupplierLogisticsJobManagement = () => {
                 </div>
             </nav>
 
+            {/* Secondary Navigation */}
+            <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '0 3rem' }}>
+                <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>
+                    <span
+                        onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/supplier/dashboard/${userId}`); }}
+                        style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '1rem 0', transition: 'color 0.2s' }}
+                    >
+                        Dashboard
+                    </span>
+                    <span
+                        style={{ color: 'var(--text-main)', cursor: 'default', padding: '1rem 0', borderBottom: '2px solid var(--text-main)' }}
+                    >
+                        Supplier Jobs
+                    </span>
+                    <span
+                        onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/quoted-jobs/${userId}`); }}
+                        style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '1rem 0', transition: 'color 0.2s' }}
+                    >
+                        Quoted Jobs
+                    </span>
+                    <span
+                        onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/assigned-jobs/${userId}`); }}
+                        style={{ color: 'var(--text-muted)', cursor: 'pointer', padding: '1rem 0', transition: 'color 0.2s' }}
+                    >
+                        Assigned Jobs
+                    </span>
+                </div>
+            </div>
+
             <main className="container" style={{ padding: '3rem 1rem', maxWidth: '1400px', margin: '0 auto' }}>
                 {/* Header with Back Button */}
                 <div style={{ marginBottom: '2.5rem' }}>

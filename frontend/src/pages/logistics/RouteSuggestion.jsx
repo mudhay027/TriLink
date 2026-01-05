@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Bell, User, Clock, Truck, Map, DollarSign, TrendingUp, Package } from 'lucide-react';
+import { Bell, User, Clock, Truck, Map, DollarSign, TrendingUp, Package, Zap, CheckCircle, MapPin, Maximize2, X } from 'lucide-react';
 import Toast from '../../components/Toast';
 import { useToast } from '../../hooks/useNotification';
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
@@ -23,6 +23,7 @@ const RouteSuggestion = () => {
     const navigate = useNavigate();
     const [routes, setRoutes] = useState([]);
     const [selectedRoute, setSelectedRoute] = useState(null);
+    const [showComparison, setShowComparison] = useState(false);
 
     // Custom notifications
     const { toast, showError, hideToast } = useToast();

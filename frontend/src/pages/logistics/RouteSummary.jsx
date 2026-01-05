@@ -29,28 +29,36 @@ const RouteSummary = () => {
     // Custom notifications
     const { toast, showError, hideToast } = useToast();
 
+    // Validate required data on mount
+    React.useEffect(() => {
+        if (!jobData || !suggestedRouteData) {
+            console.error('Missing required data for RouteSummary');
+            const userId = localStorage.getItem('userId');
+            if (userId) {
+                navigate(`/logistics/dashboard/${userId}`, { replace: true });
+            } else {
+                navigate('/login', { replace: true });
+            }
+        }
+    }, [jobData, suggestedRouteData, navigate]);
+
     // Debug: Log received data
     console.log('RouteSummary received suggestedRouteData:', suggestedRouteData);
     console.log('Cost breakdown in RouteSummary:', suggestedRouteData?.costBreakdown);
 
     const handleAccept = async () => {
         try {
-            // Update job status in database
-            const token = localStorage.getItem('token');
-            const headers = token ? {
-                'Authorization': `Bearer ${token} `,
-                'Content-Type': 'application/json'
-            } : { 'Content-Type': 'application/json' };
-
-            await fetch(`http://localhost:5081/api/BuyerLogisticsJob/${jobData.id}/status`, {
-                method: 'PUT',
-                headers: headers,
-                body: JSON.stringify('In Progress')
-            });
-
-
-
+            // Validate userId first
             const userId = localStorage.getItem('userId');
+            if (!userId) {
+                showError('User ID not found. Please log in again.');
+                navigate('/login');
+                return;
+            }
+
+            // Navigate to dashboard
+            // Note: The job status will be updated when the logistics provider
+            // actually starts working on the job from the Assigned Jobs page
             navigate(`/logistics/dashboard/${userId}`);
         } catch (error) {
             console.error('Error accepting route:', error);
@@ -430,6 +438,15 @@ const RouteSummary = () => {
                     </div>
                 )}
             </main>
+
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={hideToast}
+                />
+            )}
         </div>
     );
 };

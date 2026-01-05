@@ -15,6 +15,7 @@ namespace Backend.Models.DTO
         
         public Guid BuyerId { get; set; }
         public string BuyerName { get; set; }
+        public string BuyerCompanyName { get; set; }
         
         public Guid SellerId { get; set; }
         public string SellerName { get; set; }

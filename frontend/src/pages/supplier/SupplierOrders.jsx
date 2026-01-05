@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Bell, User, Search, Filter, ChevronRight, Clock, CheckCircle, XCircle, AlertCircle, Truck, ArrowRight } from 'lucide-react';
+import Toast from '../../components/Toast';
+import ConfirmModal from '../../components/ConfirmModal';
+import { useToast, useConfirm } from '../../hooks/useNotification';
 import '../../index.css';
 
 const SupplierOrders = () => {
@@ -18,6 +21,16 @@ const SupplierOrders = () => {
     const [rejectedNegotiations, setRejectedNegotiations] = useState([]);
     const [completedNegotiations, setCompletedNegotiations] = useState([]);
 
+    // Product Details Modal State
+    const [showProductModal, setShowProductModal] = useState(false);
+    const [productDetails, setProductDetails] = useState(null);
+    const [loadingProductDetails, setLoadingProductDetails] = useState(false);
+    const [productModalPosition, setProductModalPosition] = useState({ top: 0, left: 0 });
+
+    // Custom notifications
+    const { toast, showSuccess, showError, hideToast } = useToast();
+    const { confirmState, showConfirm, hideConfirm } = useConfirm();
+
     useEffect(() => {
         const fetchOrders = async () => {
             try {
@@ -34,8 +47,10 @@ const SupplierOrders = () => {
 
                     const mappedOrders = data.map(order => ({
                         id: order.id, // Display full ID or slice
-                        buyer: order.buyerName || 'Unknown Buyer',
+                        buyer: order.buyerCompanyName || order.buyerName || 'Unknown Buyer',
+                        buyerId: order.buyerId,
                         product: order.productName || 'Unknown Product',
+                        productId: order.productId,
                         quantity: `${order.quantity} ${order.unit}`,
                         date: new Date(order.createdAt).toLocaleDateString(),
                         status: order.status,
@@ -73,6 +88,7 @@ const SupplierOrders = () => {
                             buyerPhone: n.buyerPhone,
                             buyerLocation: n.buyerLocation,
                             product: n.productName || 'Unknown Product',
+                            productId: n.productId,
                             productImage: n.productImageUrl || '/placeholder-product.png',
                             originalOffer: `₹${n.productBasePrice || 0}/${n.productUnit || 'unit'}`,
                             counterOffer: (n.pricePerUnit > 0 && n.totalPrice > 0) ? `₹${n.pricePerUnit}/${n.unit || n.productUnit || 'unit'} (Total: ₹${n.totalPrice})` : `₹${n.currentOfferAmount || 0}`,
@@ -96,6 +112,7 @@ const SupplierOrders = () => {
                             buyerPhone: n.buyerPhone,
                             buyerLocation: n.buyerLocation,
                             product: n.productName || 'Unknown Product',
+                            productId: n.productId,
                             productImage: n.productImageUrl || '/placeholder-product.png',
                             originalOffer: `₹${n.productBasePrice || 0}/${n.productUnit || 'unit'}`,
                             counterOffer: (n.pricePerUnit > 0 && n.totalPrice > 0) ? `₹${n.pricePerUnit}/${n.unit || n.productUnit || 'unit'} (Total: ₹${n.totalPrice})` : `₹${n.currentOfferAmount || 0}`,
@@ -120,6 +137,7 @@ const SupplierOrders = () => {
                             buyer: n.buyerCompanyName || n.buyerName || 'Unknown Buyer',
                             buyerId: n.buyerId,
                             product: n.productName || 'Unknown Product',
+                            productId: n.productId,
                             productImage: n.productImageUrl || '/placeholder-product.png',
                             originalOffer: `₹${n.productBasePrice || 0}/${n.productUnit || 'unit'}`,
                             counterOffer: (n.pricePerUnit > 0 && n.totalPrice > 0) ? `₹${n.pricePerUnit}/${n.unit || n.productUnit || 'unit'} (Total: ₹${n.totalPrice})` : `₹${n.currentOfferAmount || 0}`,
@@ -139,6 +157,7 @@ const SupplierOrders = () => {
                             buyerId: n.buyerId,
                             buyerEmail: n.buyerEmail || n.buyerName,
                             product: n.productName || 'Unknown Product',
+                            productId: n.productId,
                             productImage: n.productImageUrl || '/placeholder-product.png',
                             originalOffer: `₹${n.productBasePrice || 0}/${n.productUnit || 'unit'}`,
                             counterOffer: (n.pricePerUnit > 0 && n.totalPrice > 0) ? `₹${n.pricePerUnit}/${n.unit || n.productUnit || 'unit'} (Total: ₹${n.totalPrice})` : `₹${n.currentOfferAmount || 0}`,
@@ -213,25 +232,30 @@ const SupplierOrders = () => {
                 }
             } else {
                 console.error("Failed to update order status");
-                alert("Failed to mark payment as received. Please try again.");
+                showError("Failed to mark payment as received. Please try again.");
             }
         } catch (err) {
             console.error("Error updating order status:", err);
-            alert("Error updating order status.");
+            showError("Error updating order status.");
         }
     };
 
 
     const handleCancelOrder = (orderId) => {
-        if (confirm('Are you sure you want to cancel this order?')) {
-            const orderToMove = activeOrders.find(o => o.id === orderId);
-            if (orderToMove) {
-                // Remove from active
-                setActiveOrders(prev => prev.filter(o => o.id !== orderId));
-                // Add to history with new status
-                setOrderHistory(prev => [{ ...orderToMove, status: 'Cancelled' }, ...prev]);
+        showConfirm({
+            title: 'Cancel Order',
+            message: 'Are you sure you want to cancel this order? This action cannot be undone.',
+            confirmText: 'Yes, Cancel',
+            onConfirm: () => {
+                const orderToMove = activeOrders.find(o => o.id === orderId);
+                if (orderToMove) {
+                    // Remove from active
+                    setActiveOrders(prev => prev.filter(o => o.id !== orderId));
+                    // Add to history with new status
+                    setOrderHistory(prev => [{ ...orderToMove, status: 'Cancelled' }, ...prev]);
+                }
             }
-        }
+        });
     };
 
     // Modal State
@@ -265,15 +289,48 @@ const SupplierOrders = () => {
                 const data = await response.json();
                 setBuyerDetails(data);
             } else {
-                alert('Failed to fetch buyer details');
+                showError('Failed to fetch buyer details');
                 setShowBuyerModal(false);
             }
         } catch (error) {
             console.error('Error fetching buyer details:', error);
-            alert('Error fetching buyer details');
+            showError('Error fetching buyer details');
             setShowBuyerModal(false);
         } finally {
             setLoadingBuyerDetails(false);
+        }
+    };
+
+    const fetchProductDetails = async (productId, event) => {
+        setLoadingProductDetails(true);
+
+        // Calculate position near the button
+        const buttonRect = event.target.getBoundingClientRect();
+        setProductModalPosition({
+            top: buttonRect.bottom + window.scrollY + 5,
+            left: buttonRect.left + window.scrollX
+        });
+
+        setShowProductModal(true);
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:5081/api/Product/${productId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setProductDetails(data);
+            } else {
+                showError('Failed to fetch product details');
+                setShowProductModal(false);
+            }
+        } catch (error) {
+            console.error('Error fetching product details:', error);
+            showError('Error fetching product details');
+            setShowProductModal(false);
+        } finally {
+            setLoadingProductDetails(false);
         }
     };
 
@@ -306,11 +363,11 @@ const SupplierOrders = () => {
                 setShowCancelModal(false);
                 setSelectedOrderId(null);
             } else {
-                alert("Failed to cancel order.");
+                showError("Failed to cancel order.");
             }
         } catch (error) {
             console.error("Error cancelling order:", error);
-            alert("Error cancelling order.");
+            showError("Error cancelling order.");
         }
     };
 
@@ -444,6 +501,93 @@ const SupplierOrders = () => {
                 </div>
             )}
 
+            {/* Product Details Modal */}
+            {showProductModal && (
+                <div
+                    onClick={() => {
+                        setShowProductModal(false);
+                        setProductDetails(null);
+                    }}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'transparent',
+                        zIndex: 999
+                    }}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            position: 'absolute',
+                            top: `${productModalPosition.top}px`,
+                            left: `${productModalPosition.left}px`,
+                            background: 'white',
+                            padding: '1.5rem',
+                            borderRadius: '8px',
+                            width: '350px',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                            border: '1px solid #e2e8f0',
+                            zIndex: 1000
+                        }}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: 0 }}>Product Details</h3>
+                            <button
+                                onClick={() => {
+                                    setShowProductModal(false);
+                                    setProductDetails(null);
+                                }}
+                                style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#94a3b8' }}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        {loadingProductDetails ? (
+                            <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                Loading...
+                            </div>
+                        ) : productDetails ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product Name</div>
+                                    <div style={{ fontSize: '1rem', fontWeight: '600' }}>{productDetails.name || 'N/A'}</div>
+                                </div>
+
+                                <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Category</div>
+                                    <div style={{ fontSize: '0.9rem' }}>{productDetails.category || 'N/A'}</div>
+                                </div>
+
+                                <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price</div>
+                                    <div style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: '600' }}>₹{productDetails.basePrice || 0}/{productDetails.unit || 'unit'}</div>
+                                </div>
+
+                                <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Available Quantity</div>
+                                    <div style={{ fontSize: '0.9rem' }}>{productDetails.quantity || 0} {productDetails.unit || 'units'}</div>
+                                </div>
+
+                                <div style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lead Time</div>
+                                    <div style={{ fontSize: '0.9rem' }}>{productDetails.leadTime || 0} days</div>
+                                </div>
+
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Description</div>
+                                    <div style={{ fontSize: '0.9rem' }}>{productDetails.description || 'No description available'}</div>
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
+                </div>
+            )}
+
+
             {/* Navigation Bar */}
             <nav style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
@@ -512,8 +656,40 @@ const SupplierOrders = () => {
                                         <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginBottom: '0.25rem' }}>
                                             {order.product} • {order.quantity}
                                         </div>
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
                                             Amount: <span style={{ color: 'black', fontWeight: '500' }}>{order.amount}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <button
+                                                onClick={(e) => fetchBuyerDetails(order.buyerId, e)}
+                                                style={{
+                                                    padding: '0.25rem 0.75rem',
+                                                    background: '#3b82f6',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '500',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                Buyer Details
+                                            </button>
+                                            <button
+                                                onClick={(e) => fetchProductDetails(order.productId, e)}
+                                                style={{
+                                                    padding: '0.25rem 0.75rem',
+                                                    background: '#10b981',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '500',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                Product Details
+                                            </button>
                                         </div>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
@@ -583,6 +759,21 @@ const SupplierOrders = () => {
                                                     }}
                                                 >
                                                     Buyer Details
+                                                </button>
+                                                <button
+                                                    onClick={(e) => fetchProductDetails(req.productId, e)}
+                                                    style={{
+                                                        padding: '0.25rem 0.75rem',
+                                                        background: '#10b981',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: '500',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    Product Details
                                                 </button>
                                             </div>
                                             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Negotiating for {req.product}</p>
@@ -675,6 +866,21 @@ const SupplierOrders = () => {
                                                 >
                                                     Buyer Details
                                                 </button>
+                                                <button
+                                                    onClick={(e) => fetchProductDetails(req.productId, e)}
+                                                    style={{
+                                                        padding: '0.25rem 0.75rem',
+                                                        background: '#10b981',
+                                                        color: 'white',
+                                                        border: 'none',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: '500',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    Product Details
+                                                </button>
                                             </div>
                                             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Negotiation completed for {req.product}</p>
                                         </div>
@@ -763,6 +969,21 @@ const SupplierOrders = () => {
                                             >
                                                 Buyer Details
                                             </button>
+                                            <button
+                                                onClick={(e) => fetchProductDetails(req.productId, e)}
+                                                style={{
+                                                    padding: '0.25rem 0.75rem',
+                                                    background: '#10b981',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '500',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                Product Details
+                                            </button>
                                         </div>
                                         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>Requested a counter-offer for {req.product}</p>
                                     </div>
@@ -827,13 +1048,13 @@ const SupplierOrders = () => {
                                                 });
                                                 if (response.ok) {
                                                     setNegotiationRequests(prev => prev.filter(r => r.id !== req.id));
-                                                    alert('Negotiation request rejected and moved to Order History');
+                                                    showSuccess('Negotiation request rejected and moved to Order History');
                                                 } else {
-                                                    alert("Failed to reject offer. Please try again.");
+                                                    showError("Failed to reject offer. Please try again.");
                                                 }
                                             } catch (err) {
                                                 console.error("Error rejecting offer:", err);
-                                                alert("Error rejecting offer.");
+                                                showError("Error rejecting offer.");
                                             }
                                         }}
                                         style={{ padding: '0.5rem 1rem', border: '1px solid #e2e8f0', background: 'white', borderRadius: '6px', fontWeight: '500', color: '#ef4444' }}
@@ -856,9 +1077,9 @@ const SupplierOrders = () => {
                                                     if (response.ok) {
                                                         setNegotiationRequests(prev => prev.filter(r => r.id !== req.id));
                                                         // Optionally move to active orders or navigate
-                                                        alert("Counter Offer Accepted!");
+                                                        showSuccess("Counter Offer Accepted!");
                                                     } else {
-                                                        alert("Failed to accept offer.");
+                                                        showError("Failed to accept offer.");
                                                     }
                                                 } catch (err) {
                                                     console.error("Error accepting offer:", err);
@@ -886,9 +1107,9 @@ const SupplierOrders = () => {
                                                         setNegotiationRequests(prev => prev.filter(r => r.id !== req.id));
                                                         setActiveNegotiations(prev => [...prev, req]);
                                                         setActiveTab('activeNegotiations');
-                                                        alert('Moved to Active Negotiation!');
+                                                        showSuccess('Moved to Active Negotiation!');
                                                     } else {
-                                                        alert('Failed to start negotiation.');
+                                                        showError('Failed to start negotiation.');
                                                     }
                                                 } catch (err) {
                                                     console.error('Error starting negotiation:', err);

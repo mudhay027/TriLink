@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, User, Truck, Plus, MapPin, X, Package, Calendar, FileText, Shield } from 'lucide-react';
+import Toast from '../../components/Toast';
+import { useToast } from '../../hooks/useNotification';
 import '../../index.css';
 
 const SupplierLogisticsJobCreation = () => {
     const navigate = useNavigate();
     const [showCreateForm, setShowCreateForm] = useState(false);
+
+    // Custom notifications
+    const { toast, showSuccess, showWarning, hideToast } = useToast();
 
     // Comprehensive Form Data
     const [formData, setFormData] = useState({
@@ -95,7 +100,7 @@ const SupplierLogisticsJobCreation = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token} `
                 },
                 body: JSON.stringify(jobData)
             });
@@ -111,12 +116,12 @@ const SupplierLogisticsJobCreation = () => {
                     ewayBillNumber: '', invoiceNumber: '', gstNumber: '', materialCategory: 'Non-Hazardous',
                     senderName: '', senderCompanyName: '', senderMobile: '', senderEmail: '', status: 'Active'
                 });
-                alert('Logistics Job Created Successfully!');
+                showSuccess('Logistics Job Created Successfully!');
                 // Optionally redirect to view created jobs
                 const userId = localStorage.getItem('userId');
-                navigate(`/supplier/logistics-job-management/${userId}`);
+                navigate(`/ supplier / logistics - job - management / ${userId} `);
             } else {
-                alert(`Note: Backend might not support all fields yet. Response: ${response.status}`);
+                showWarning(`Note: Backend might not support all fields yet. Response: ${response.status}`);
             }
         } catch (error) {
             console.error("Error creating job", error);
@@ -125,14 +130,24 @@ const SupplierLogisticsJobCreation = () => {
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)' }}>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={hideToast}
+                    duration={toast.duration}
+                />
+            )}
+
             {/* Navigation Bar */}
             <nav style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
                     <div style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</div>
                     <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>
-                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/supplier/dashboard/${userId}`); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Dashboard</a>
-                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/supplier/products/${userId}`); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Products</a>
-                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/supplier/orders/${userId}`); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Orders</a>
+                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/ supplier / dashboard / ${userId} `); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Dashboard</a>
+                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/ supplier / products / ${userId} `); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Products</a>
+                        <a href="#" onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/ supplier / orders / ${userId} `); }} style={{ color: 'var(--text-muted)', cursor: 'pointer' }}>Orders</a>
                         <a href="#" style={{ color: 'var(--text-main)', cursor: 'default' }}>Logistics Jobs</a>
                     </div>
                 </div>
@@ -140,7 +155,7 @@ const SupplierLogisticsJobCreation = () => {
                     <Bell size={20} color="var(--text-muted)" />
                     <div
                         style={{ width: '32px', height: '32px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                        onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/supplier/profile/${userId}`); }}
+                        onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/ supplier / profile / ${userId} `); }}
                     >
                         <User size={18} color="var(--text-muted)" />
                     </div>
@@ -157,7 +172,7 @@ const SupplierLogisticsJobCreation = () => {
                         <button
                             onClick={() => {
                                 const userId = localStorage.getItem('userId');
-                                navigate(`/supplier/logistics-job-management/${userId}`);
+                                navigate(`/ supplier / logistics - job - management / ${userId} `);
                             }}
                             className="btn btn-outline"
                             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', fontSize: '1rem' }}
@@ -194,7 +209,7 @@ const SupplierLogisticsJobCreation = () => {
                             <button
                                 onClick={() => {
                                     const userId = localStorage.getItem('userId');
-                                    navigate(`/supplier/logistics-job-management/${userId}`);
+                                    navigate(`/ supplier / logistics - job - management / ${userId} `);
                                 }}
                                 className="btn btn-outline"
                                 style={{ padding: '0.75rem 2rem', fontSize: '1rem' }}

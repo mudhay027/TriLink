@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Bell, User, Search, ChevronDown, MapPin, Package, Calendar, Clock } from 'lucide-react';
+import Toast from '../../components/Toast';
+import { useToast } from '../../hooks/useNotification';
 import '../../index.css';
 
 const AvailableJobs = () => {
@@ -18,6 +20,9 @@ const AvailableJobs = () => {
     const [selectedJob, setSelectedJob] = useState(null);
     const [quoteForm, setQuoteForm] = useState({ amount: '', date: '', time: '' });
     const [submittedQuotes, setSubmittedQuotes] = useState({});
+
+    // Custom notifications
+    const { toast, showSuccess, showError, hideToast } = useToast();
 
     // Fetch jobs and my quotes from API
     React.useEffect(() => {
@@ -182,24 +187,34 @@ const AvailableJobs = () => {
 
                 setShowQuoteModal(false);
                 // Optionally show success message (toast)
-                alert(`Quote submitted for ${selectedJob.id} successfully!`);
+                showSuccess(`Quote submitted for ${selectedJob.id} successfully!`);
             } else {
                 console.error("Failed to submit quote");
-                alert("Failed to submit quote. Please try again.");
+                showError("Failed to submit quote. Please try again.");
             }
         } catch (error) {
             console.error("Error submitting quote", error);
-            alert("Error submitting quote. Check console.");
+            showError("Error submitting quote. Check console.");
         }
     };
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={hideToast}
+                    duration={toast.duration}
+                />
+            )}
+
             {/* Header */}
             <header style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }}>
-                        <img src="/trilink_logo.jpg" alt="TriLink" style={{ height: '36px' }} />
+                        <img src="/TriLinkIcon.png" alt="TriLink" style={{ height: '36px' }} />
                         <span style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</span>
                     </div>
                     <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>

@@ -50,11 +50,14 @@ namespace Backend.Mappings
             //     .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Order != null && src.Order.Product != null ? src.Order.Product.Name : null))
             //     .ForMember(dest => dest.ProviderName, opt => opt.MapFrom(src => src.Provider != null ? src.Provider.Username : null));
 
+
             CreateMap<Order, OrderDto>()
                  .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product != null ? src.Product.Name : null))
                  .ForMember(dest => dest.Unit, opt => opt.MapFrom(src => src.Product != null ? src.Product.Unit : ""))
                  .ForMember(dest => dest.BuyerName, opt => opt.MapFrom(src => src.Buyer != null ? src.Buyer.Username : null))
+                 .ForMember(dest => dest.BuyerCompanyName, opt => opt.MapFrom(src => src.Buyer != null ? src.Buyer.CompanyName : null))
                  .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Seller != null ? src.Seller.Username : null));
+
 
             // BuyerLogisticsJob mappings
             CreateMap<CreateBuyerLogisticsJobDto, BuyerLogisticsJob>();

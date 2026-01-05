@@ -280,7 +280,7 @@ const Registration = () => {
             {/* Header */}
             <header style={{ padding: '1.5rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '700', fontSize: '1.25rem', cursor: 'pointer' }} onClick={() => navigate('/')}>
-                    <img src="/trilink_logo.jpg" alt="TriLink" style={{ height: '36px' }} />
+                    <img src="/TriLinkIcon.png" alt="TriLink" style={{ height: '36px' }} />
                     <span>TriLink</span>
                 </div>
                 <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', fontSize: '0.9rem', fontWeight: '500' }}>

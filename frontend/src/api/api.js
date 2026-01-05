@@ -45,11 +45,27 @@ export const api = {
         return response.json();
     },
 
-    put: async (endpoint, body) => {
+    put: async (endpoint, body, options = {}) => {
+        const isFormData = body instanceof FormData;
+        const headers = getHeaders();
+
+        // Remove Content-Type for FormData to let browser set it with boundary
+        if (isFormData) {
+            delete headers['Content-Type'];
+        }
+
+        // Override headers if provided in options
+        const finalHeaders = options.headers ? { ...headers, ...options.headers } : headers;
+
+        // For FormData, only keep Authorization header
+        const requestHeaders = isFormData && headers.Authorization
+            ? { Authorization: headers.Authorization }
+            : finalHeaders;
+
         const response = await fetch(`${BASE_URL}${endpoint}`, {
             method: 'PUT',
-            headers: getHeaders(),
-            body: JSON.stringify(body),
+            headers: requestHeaders,
+            body: isFormData ? body : JSON.stringify(body),
         });
 
         if (!response.ok) {

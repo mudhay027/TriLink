@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, User, ChevronLeft, MapPin, Truck, Package, Calendar, Eye, X, CheckCircle } from 'lucide-react';
+import Toast from '../../components/Toast';
+import { useToast } from '../../hooks/useNotification';
 import '../../index.css';
 
 const AssignedJobs = () => {
@@ -8,6 +10,9 @@ const AssignedJobs = () => {
     const [assignedJobs, setAssignedJobs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedJob, setSelectedJob] = useState(null);
+
+    // Custom notifications
+    const { toast, showError, showInfo, hideToast } = useToast();
 
     useEffect(() => {
         fetchAssignedJobs();
@@ -49,7 +54,7 @@ const AssignedJobs = () => {
                     setSelectedJob({ ...selectedJob, status: newStatus });
                 }
             } else {
-                alert('Failed to update status');
+                showError('Failed to update status');
             }
         } catch (error) {
             console.error('Error updating status:', error);
@@ -197,7 +202,7 @@ const AssignedJobs = () => {
             <header style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }}>
-                        <img src="/trilink_logo.jpg" alt="TriLink" style={{ height: '36px' }} />
+                        <img src="/TriLinkIcon.png" alt="TriLink" style={{ height: '36px' }} />
                         <span style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</span>
                     </div>
                     <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>
@@ -272,7 +277,7 @@ const AssignedJobs = () => {
                                                         // Navigate to RouteSummary or just show it's done
                                                         // Currently navigating to route suggestion might be redundant if already finalized
                                                         // But user might want to View it.
-                                                        alert("Route already finalized! You can view it in the dashboard history after delivery, or re-plan if needed.");
+                                                        showInfo("Route already finalized! You can view it in the dashboard history after delivery, or re-plan if needed.");
                                                     }}
                                                     className="btn"
                                                     style={{

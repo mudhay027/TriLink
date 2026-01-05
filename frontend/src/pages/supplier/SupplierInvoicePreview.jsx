@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Bell, User, ArrowLeft, Download, Edit, CheckCircle, Printer } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
+import Toast from '../../components/Toast';
+import ConfirmModal from '../../components/ConfirmModal';
+import { useToast, useConfirm } from '../../hooks/useNotification';
 import '../../index.css';
 
 const SupplierInvoicePreview = () => {
@@ -9,6 +12,10 @@ const SupplierInvoicePreview = () => {
     const { invoiceId } = useParams();
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Custom notifications
+    const { toast, showSuccess, showError, hideToast } = useToast();
+    const { confirmState, showConfirm, hideConfirm } = useConfirm();
 
     useEffect(() => {
         fetchInvoice();
@@ -79,44 +86,48 @@ const SupplierInvoicePreview = () => {
                 const data = await response.json();
                 setInvoice(data);
             } else {
-                alert('Failed to load invoice');
+                showError('Failed to load invoice');
                 const userId = localStorage.getItem('userId');
                 navigate(`/supplier/orders/${userId}`);
             }
             setLoading(false);
         } catch (error) {
             console.error('Error fetching invoice:', error);
-            alert('Error loading invoice');
+            showError('Error loading invoice');
             setLoading(false);
         }
     };
 
     const handleFinalize = async () => {
-        if (!confirm('Are you sure you want to finalize this invoice? Once finalized, it cannot be edited.')) {
-            return;
-        }
+        showConfirm({
+            title: 'Finalize Invoice',
+            message: 'Are you sure you want to finalize this invoice? Once finalized, it cannot be edited.',
+            confirmText: 'Yes, Finalize',
+            onConfirm: async () => {
 
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5081/api/invoice/${invoiceId}/finalize`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`http://localhost:5081/api/invoice/${invoiceId}/finalize`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        showSuccess('Invoice finalized successfully!');
+                        fetchInvoice(); // Refresh invoice data
+                    } else {
+                        const error = await response.json();
+                        showError(`Failed to finalize invoice: ${error.message || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    console.error('Error finalizing invoice:', error);
+                    showError('Error finalizing invoice');
                 }
-            });
-
-            if (response.ok) {
-                alert('Invoice finalized successfully!');
-                fetchInvoice(); // Refresh invoice data
-            } else {
-                const error = await response.json();
-                alert(`Failed to finalize invoice: ${error.message || 'Unknown error'}`);
             }
-        } catch (error) {
-            console.error('Error finalizing invoice:', error);
-            alert('Error finalizing invoice');
-        }
+        });
     };
 
     const handleDownload = () => {
@@ -145,6 +156,28 @@ const SupplierInvoicePreview = () => {
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={hideToast}
+                    duration={toast.duration}
+                />
+            )}
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={hideConfirm}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                confirmText={confirmState.confirmText}
+                cancelText={confirmState.cancelText}
+                confirmColor={confirmState.confirmColor}
+            />
+
             {/* Navigation */}
             <nav className="no-print" style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>

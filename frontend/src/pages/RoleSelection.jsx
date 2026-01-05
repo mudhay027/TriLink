@@ -16,9 +16,7 @@ const RoleSelection = () => {
             {/* Header */}
             <header style={{ padding: '1.5rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--surface)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '700', fontSize: '1.25rem' }}>
-                    <div style={{ width: '32px', height: '32px', background: 'var(--text-main)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                        <span style={{ fontSize: '1.2rem' }}>T</span>
-                    </div>
+                    <img src="/TriLinkIcon.png" alt="TriLink" style={{ height: '32px' }} />
                     TriLink
                 </div>
                 <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', fontSize: '0.9rem', fontWeight: '500' }}>

@@ -1,21 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../../api/api';
-import { Bell, User, Plus, Search, Filter, Edit2, Trash2, ChevronDown } from 'lucide-react';
+import { Bell, User, Plus, Search, Filter, Edit2, Trash2, ChevronDown, Upload, Image as ImageIcon, Check, FileText, ExternalLink } from 'lucide-react';
+import Toast from '../../components/Toast';
+import { useToast } from '../../hooks/useNotification';
 import '../../index.css';
 
 const MyProducts = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [searchTerm, setSearchTerm] = useState('');
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingProduct, setEditingProduct] = useState(null);
+    const [formErrors, setFormErrors] = useState({});
     const [filterCategory, setFilterCategory] = useState('All');
     const [filterStatus, setFilterStatus] = useState('All');
 
     const [products, setProducts] = useState([]);
 
+    // Custom notifications
+    const { toast, showError, hideToast } = useToast();
+
     // Modal States
     const [deleteModal, setDeleteModal] = useState({ show: false, id: null });
     const [editModal, setEditModal] = useState({ show: false, product: null });
+    const [newImage, setNewImage] = useState(null);
+    const [newCertificate, setNewCertificate] = useState(null);
+    const [validationErrors, setValidationErrors] = useState([]);
 
     const fetchProducts = async () => {
         try {
@@ -71,14 +82,19 @@ const MyProducts = () => {
                 setProducts(products.filter(p => p.id !== deleteModal.id));
                 setDeleteModal({ show: false, id: null });
             } catch (error) {
-                console.error("Failed to delete product:", error);
-                alert("Failed to delete product: " + error.message);
+                console.error('Error deleting product:', error);
+                showError("Failed to delete product: " + error.message);
             }
         }
     };
 
     // Edit Handlers
     const openEditModal = (product) => {
+        // Reset file states and validation errors
+        setNewImage(null);
+        setNewCertificate(null);
+        setValidationErrors([]);
+
         // Prepare editable state
         setEditModal({
             show: true,
@@ -103,38 +119,76 @@ const MyProducts = () => {
     };
 
     const handleEditChange = (e) => {
+        const { name, value } = e.target;
+
+        // Clear validation errors when user starts editing
+        if (validationErrors.length > 0) {
+            setValidationErrors([]);
+        }
+
         setEditModal({
             ...editModal,
-            product: { ...editModal.product, [e.target.name]: e.target.value }
+            product: { ...editModal.product, [name]: value }
         });
     };
 
     const handleSaveEdit = async () => {
         if (editModal.product) {
+            // Validate inputs
+            const errors = [];
+            const price = parseFloat(editModal.product.price);
+            const quantity = parseInt(editModal.product.quantity);
+            const minOrderQty = parseInt(editModal.product.minOrderQty);
+
+            if (isNaN(quantity) || quantity < 1) {
+                errors.push('Quantity must be at least 1');
+            }
+            if (isNaN(price) || price <= 0) {
+                errors.push('BasePrice: Price must be greater than zero');
+            }
+            if (isNaN(minOrderQty) || minOrderQty < 1) {
+                errors.push('Minimum Order Quantity must be at least 1');
+            }
+
+            if (errors.length > 0) {
+                setValidationErrors(errors);
+                return;
+            }
+
             try {
-                const payload = {
-                    name: editModal.product.name,
-                    description: editModal.product.description || "",
-                    basePrice: parseFloat(editModal.product.price) || 0,
-                    quantity: parseInt(editModal.product.quantity) || 0,
-                    location: editModal.product.location || "Not Specified",
-                    imageUrl: editModal.product.imageUrl || "",
-                    certificateUrl: editModal.product.certificateUrl || "",
-                    category: editModal.product.category,
-                    unit: editModal.product.unit || "Ton",
-                    minOrderQty: parseInt(editModal.product.minOrderQty) || 0,
-                    leadTime: parseInt(editModal.product.leadTime) || 7,
-                    status: editModal.product.status,
-                    supplierId: editModal.product.supplierId // Although controller might override, good to pass if needed or ignore
-                };
+                // Create FormData to send files
+                const formData = new FormData();
+                formData.append('name', editModal.product.name);
+                formData.append('description', editModal.product.description || '');
+                formData.append('basePrice', price.toString());
+                formData.append('quantity', quantity.toString());
+                formData.append('location', editModal.product.location || 'Not Specified');
+                formData.append('category', editModal.product.category);
+                formData.append('unit', editModal.product.unit || 'Ton');
+                formData.append('minOrderQty', minOrderQty.toString());
+                formData.append('leadTime', editModal.product.leadTime?.toString() || '7');
+                formData.append('status', editModal.product.status);
 
-                await api.put(`/Product/${editModal.product.id}`, payload);
+                // Add files if new ones are selected
+                if (newImage) {
+                    formData.append('ImageFile', newImage);
+                }
+                if (newCertificate) {
+                    formData.append('CertificateFile', newCertificate);
+                }
 
-                await fetchProducts(); // Refresh list to get formatted strings back
+                // Use FormData with PUT request
+                await api.put(`/Product/${editModal.product.id}`, formData);
+
+                await fetchProducts();
                 setEditModal({ show: false, product: null });
+                setNewImage(null);
+                setNewCertificate(null);
+                setValidationErrors([]);
             } catch (error) {
                 console.error("Failed to update product:", error);
-                alert("Failed to update product: " + error.message);
+                const errorMsg = error.response?.data?.message || error.message || "Failed to update product";
+                setValidationErrors([errorMsg]);
             }
         }
     };
@@ -297,9 +351,14 @@ const MyProducts = () => {
                                             <td style={{ padding: '1.25rem 1.5rem' }}>{product.leadTime}</td>
                                             <td style={{ padding: '1.25rem 1.5rem' }}>
                                                 <span style={{
+                                                    display: 'inline-block',
                                                     background: bg,
                                                     color: text,
-                                                    padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '500'
+                                                    padding: '0.35rem 0.85rem',
+                                                    borderRadius: '20px',
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: '500',
+                                                    whiteSpace: 'nowrap'
                                                 }}>
                                                     {product.status}
                                                 </span>
@@ -346,6 +405,19 @@ const MyProducts = () => {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            {/* Validation Errors */}
+                            {validationErrors.length > 0 && (
+                                <div style={{ background: '#fee2e2', border: '1px solid #ef4444', borderRadius: '8px', padding: '1rem' }}>
+                                    <div style={{ color: '#b91c1c', fontSize: '0.9rem', fontWeight: '600', marginBottom: '0.5rem' }}>Failed to update product. One or more validation errors occurred.</div>
+                                    <div style={{ color: '#dc2626', fontSize: '0.85rem' }}>
+                                        <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>Details:</div>
+                                        {validationErrors.map((error, index) => (
+                                            <div key={index} style={{ marginLeft: '1rem' }}>• {error}</div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1.5rem' }}>
                                 <div className="input-group">
                                     <label className="input-label">Product Name</label>
@@ -353,22 +425,73 @@ const MyProducts = () => {
                                 </div>
                                 <div className="input-group">
                                     <label className="input-label">Category</label>
-                                    <input type="text" name="category" className="input-field" value={editModal.product.category} onChange={handleEditChange} />
+                                    <div style={{ position: 'relative' }}>
+                                        <select name="category" className="input-field" style={{ appearance: 'none', cursor: 'pointer' }} value={editModal.product.category} onChange={handleEditChange}>
+                                            <option value="Metals">Metals</option>
+                                            <option value="Plastics & Polymers">Plastics & Polymers</option>
+                                            <option value="Chemicals & Petrochemicals">Chemicals & Petrochemicals</option>
+                                            <option value="Construction Materials">Construction Materials</option>
+                                            <option value="Electrical Components">Electrical Components</option>
+                                            <option value="Electronic Components">Electronic Components</option>
+                                            <option value="Industrial Machinery">Industrial Machinery</option>
+                                            <option value="Industrial Tools & Equipment">Industrial Tools & Equipment</option>
+                                            <option value="Automotive Parts & Components">Automotive Parts & Components</option>
+                                            <option value="Agriculture & Agro Products">Agriculture & Agro Products</option>
+                                            <option value="Fertilizers & Pesticides">Fertilizers & Pesticides</option>
+                                            <option value="Food Processing Raw Materials">Food Processing Raw Materials</option>
+                                            <option value="Textiles Fabrics & Yarns">Textiles Fabrics & Yarns</option>
+                                            <option value="Packaging Materials">Packaging Materials</option>
+                                            <option value="Healthcare Medical Supplies">Healthcare Medical Supplies</option>
+                                            <option value="Pharma Raw Materials">Pharma Raw Materials</option>
+                                            <option value="Office Consumables & Supplies">Office Consumables & Supplies</option>
+                                            <option value="Safety PPE Products">Safety PPE Products</option>
+                                            <option value="Renewable Energy Equipment">Renewable Energy Equipment</option>
+                                            <option value="Handicrafts & Export Goods">Handicrafts & Export Goods</option>
+                                        </select>
+                                        <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }} />
+                                    </div>
                                 </div>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
                                 <div className="input-group">
                                     <label className="input-label">Price</label>
-                                    <input type="text" name="price" className="input-field" value={editModal.product.price} onChange={handleEditChange} />
+                                    <input
+                                        type="number"
+                                        name="price"
+                                        className="input-field"
+                                        value={editModal.product.price}
+                                        onChange={handleEditChange}
+                                        min="0.01"
+                                        step="0.01"
+                                    />
                                 </div>
                                 <div className="input-group">
                                     <label className="input-label">Quantity</label>
-                                    <input type="text" name="quantity" className="input-field" value={editModal.product.quantity} onChange={handleEditChange} />
+                                    <input
+                                        type="number"
+                                        name="quantity"
+                                        className="input-field"
+                                        value={editModal.product.quantity}
+                                        onChange={handleEditChange}
+                                        min="1"
+                                        step="1"
+                                    />
                                 </div>
                                 <div className="input-group">
                                     <label className="input-label">Unit</label>
-                                    <input type="text" name="unit" className="input-field" value={editModal.product.unit} onChange={handleEditChange} />
+                                    <div style={{ position: 'relative' }}>
+                                        <select name="unit" className="input-field" style={{ appearance: 'none', cursor: 'pointer' }} value={editModal.product.unit} onChange={handleEditChange}>
+                                            <option value="Ton">Ton</option>
+                                            <option value="Kg">Kg</option>
+                                            <option value="Liter">Liter</option>
+                                            <option value="Meter">Meter</option>
+                                            <option value="Unit">Unit</option>
+                                            <option value="Box">Box</option>
+                                            <option value="Piece">Piece</option>
+                                        </select>
+                                        <ChevronDown size={18} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-muted)' }} />
+                                    </div>
                                 </div>
                             </div>
 
@@ -411,17 +534,241 @@ const MyProducts = () => {
                                 <textarea name="description" className="input-field" rows="4" value={editModal.product.description} onChange={handleEditChange} style={{ resize: 'vertical' }} />
                             </div>
 
-                            {/* Read-only File Links */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '8px' }}>
-                                <label className="input-label" style={{ marginBottom: 0 }}>Current Files</label>
-                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', fontSize: '0.9rem' }}>
-                                    {editModal.product.imageUrl && (
-                                        <a href={editModal.product.imageUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>View Image</a>
-                                    )}
-                                    {editModal.product.certificateUrl && (
-                                        <a href={editModal.product.certificateUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>View Certificate</a>
-                                    )}
-                                    {!editModal.product.imageUrl && !editModal.product.certificateUrl && <span style={{ color: 'var(--text-muted)' }}>No files uploaded</span>}
+                            {/* File Upload Section */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                <div className="input-group">
+                                    <label className="input-label" style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <Upload size={16} />
+                                        Product Image
+                                    </label>
+                                    <div style={{
+                                        border: '2px solid var(--border)',
+                                        borderRadius: '12px',
+                                        padding: '1.25rem',
+                                        background: '#fafafa',
+                                        transition: 'all 0.2s ease'
+                                    }}>
+                                        {editModal.product.imageUrl && !newImage && (
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.75rem',
+                                                padding: '0.75rem',
+                                                background: 'white',
+                                                borderRadius: '8px',
+                                                marginBottom: '0.75rem',
+                                                border: '1px solid #e2e8f0'
+                                            }}>
+                                                <div style={{
+                                                    width: '36px',
+                                                    height: '36px',
+                                                    borderRadius: '6px',
+                                                    background: '#f1f5f9',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}>
+                                                    <ImageIcon size={18} color="#64748b" />
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-main)' }}>Current Image</div>
+                                                    <a
+                                                        href={editModal.product.imageUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        style={{
+                                                            fontSize: '0.8rem',
+                                                            color: 'var(--accent)',
+                                                            textDecoration: 'none',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '0.25rem'
+                                                        }}
+                                                    >
+                                                        <ExternalLink size={12} />
+                                                        View Image
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {newImage && (
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.75rem',
+                                                padding: '0.75rem',
+                                                background: '#f0fdf4',
+                                                borderRadius: '8px',
+                                                marginBottom: '0.75rem',
+                                                border: '1px solid #86efac'
+                                            }}>
+                                                <div style={{
+                                                    width: '36px',
+                                                    height: '36px',
+                                                    borderRadius: '6px',
+                                                    background: '#dcfce7',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}>
+                                                    <Check size={18} color="#16a34a" />
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '0.85rem', fontWeight: '500', color: '#16a34a' }}>New Image Selected</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#15803d', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{newImage.name}</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <label style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem',
+                                            padding: '0.75rem 1.25rem',
+                                            background: 'white',
+                                            border: '1.5px solid var(--border)',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            fontSize: '0.9rem',
+                                            fontWeight: '500',
+                                            transition: 'all 0.2s ease',
+                                            color: 'var(--text-main)'
+                                        }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.borderColor = 'var(--accent)';
+                                                e.currentTarget.style.background = '#f8fafc';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.borderColor = 'var(--border)';
+                                                e.currentTarget.style.background = 'white';
+                                            }}>
+                                            <Upload size={16} />
+                                            {newImage ? 'Change Image' : 'Choose Image'}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => setNewImage(e.target.files[0])}
+                                                style={{ display: 'none' }}
+                                            />
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className="input-group">
+                                    <label className="input-label" style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <FileText size={16} />
+                                        Certificate
+                                    </label>
+                                    <div style={{
+                                        border: '2px solid var(--border)',
+                                        borderRadius: '12px',
+                                        padding: '1.25rem',
+                                        background: '#fafafa',
+                                        transition: 'all 0.2s ease'
+                                    }}>
+                                        {editModal.product.certificateUrl && !newCertificate && (
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.75rem',
+                                                padding: '0.75rem',
+                                                background: 'white',
+                                                borderRadius: '8px',
+                                                marginBottom: '0.75rem',
+                                                border: '1px solid #e2e8f0'
+                                            }}>
+                                                <div style={{
+                                                    width: '36px',
+                                                    height: '36px',
+                                                    borderRadius: '6px',
+                                                    background: '#f1f5f9',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}>
+                                                    <FileText size={18} color="#64748b" />
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-main)' }}>Current Certificate</div>
+                                                    <a
+                                                        href={editModal.product.certificateUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        style={{
+                                                            fontSize: '0.8rem',
+                                                            color: 'var(--accent)',
+                                                            textDecoration: 'none',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '0.25rem'
+                                                        }}
+                                                    >
+                                                        <ExternalLink size={12} />
+                                                        View Certificate
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {newCertificate && (
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.75rem',
+                                                padding: '0.75rem',
+                                                background: '#f0fdf4',
+                                                borderRadius: '8px',
+                                                marginBottom: '0.75rem',
+                                                border: '1px solid #86efac'
+                                            }}>
+                                                <div style={{
+                                                    width: '36px',
+                                                    height: '36px',
+                                                    borderRadius: '6px',
+                                                    background: '#dcfce7',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}>
+                                                    <Check size={18} color="#16a34a" />
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontSize: '0.85rem', fontWeight: '500', color: '#16a34a' }}>New Certificate Selected</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#15803d', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{newCertificate.name}</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <label style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.5rem',
+                                            padding: '0.75rem 1.25rem',
+                                            background: 'white',
+                                            border: '1.5px solid var(--border)',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            fontSize: '0.9rem',
+                                            fontWeight: '500',
+                                            transition: 'all 0.2s ease',
+                                            color: 'var(--text-main)'
+                                        }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.borderColor = 'var(--accent)';
+                                                e.currentTarget.style.background = '#f8fafc';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.borderColor = 'var(--border)';
+                                                e.currentTarget.style.background = 'white';
+                                            }}>
+                                            <Upload size={16} />
+                                            {newCertificate ? 'Change Certificate' : 'Choose Certificate'}
+                                            <input
+                                                type="file"
+                                                accept=".pdf,.jpg,.jpeg,.png"
+                                                onChange={(e) => setNewCertificate(e.target.files[0])}
+                                                style={{ display: 'none' }}
+                                            />
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>

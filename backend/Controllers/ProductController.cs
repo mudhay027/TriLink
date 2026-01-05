@@ -114,9 +114,62 @@ namespace Backend.Controllers
 
         [HttpPut("{id:Guid}")]
         [Authorize(Roles = "Supplier,supplier")]
-        public async Task<IActionResult> Update([FromRoute] Guid id, [FromBody] ProductRequestDto productRequestDto)
+        public async Task<IActionResult> Update([FromRoute] Guid id, [FromForm] ProductRequestDto productRequestDto)
         {
             var productDomain = _mapper.Map<Product>(productRequestDto);
+            
+            // Get existing product to preserve URLs if no new files are uploaded
+            var existingProduct = await _productRepository.GetByIdAsync(id);
+            if (existingProduct == null)
+            {
+                return NotFound();
+            }
+
+            // Handle Image Upload - only if a new file is provided
+            if (productRequestDto.ImageFile != null)
+            {
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productRequestDto.ImageFile.FileName);
+                var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
+
+                var filePath = Path.Combine(uploadPath, fileName);
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await productRequestDto.ImageFile.CopyToAsync(stream);
+                }
+
+                var request = HttpContext.Request;
+                var domain = $"{request.Scheme}://{request.Host}";
+                productDomain.ImageUrl = $"{domain}/uploads/{fileName}";
+            }
+            else
+            {
+                // Preserve existing image URL if no new file uploaded
+                productDomain.ImageUrl = existingProduct.ImageUrl;
+            }
+
+            // Handle Certificate Upload - only if a new file is provided
+            if (productRequestDto.CertificateFile != null)
+            {
+                var fileName = Guid.NewGuid().ToString() + Path.GetExtension(productRequestDto.CertificateFile.FileName);
+                var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+                if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
+
+                var filePath = Path.Combine(uploadPath, fileName);
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await productRequestDto.CertificateFile.CopyToAsync(stream);
+                }
+
+                var request = HttpContext.Request;
+                var domain = $"{request.Scheme}://{request.Host}";
+                productDomain.CertificateUrl = $"{domain}/uploads/{fileName}";
+            }
+            else
+            {
+                // Preserve existing certificate URL if no new file uploaded
+                productDomain.CertificateUrl = existingProduct.CertificateUrl;
+            }
             
             // Check ownership? For prototype, maybe skip. But good practice.
             // Leaving ownership check for later/refinement.

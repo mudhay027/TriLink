@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, User, Edit2, Save, X, LogOut, FileText, Download, ArrowLeft } from 'lucide-react';
+import Toast from '../../components/Toast';
+import { useToast } from '../../hooks/useNotification';
 import '../../index.css';
 
 const SupplierProfile = () => {
@@ -8,6 +10,10 @@ const SupplierProfile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    // Custom notifications
+    const { toast, showError, hideToast } = useToast();
 
     // Profile state
     const [profile, setProfile] = useState({
@@ -97,7 +103,7 @@ const SupplierProfile = () => {
     const handleSave = async () => {
         // Validate Contact Person
         if (profile.contactPerson && !/^[A-Za-z\s]+$/.test(profile.contactPerson)) {
-            alert('Contact person name must contain only alphabets');
+            showError('Contact person name must contain only alphabets');
             return;
         }
 
@@ -125,15 +131,17 @@ const SupplierProfile = () => {
             // Optionally show success message
         } catch (err) {
             console.error(err);
-            alert('Failed to save changes');
+            showError('Failed to save changes');
         }
     };
 
     const handleLogout = () => {
-        if (confirm('Are you sure you want to logout?')) {
-            localStorage.clear();
-            navigate('/');
-        }
+        setShowLogoutModal(true);
+    };
+
+    const confirmLogout = () => {
+        localStorage.clear();
+        navigate('/');
     };
 
     const handleDownload = (url, filename) => {
@@ -145,6 +153,58 @@ const SupplierProfile = () => {
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={hideToast}
+                    duration={toast.duration}
+                />
+            )}
+
+            {/* Logout Confirmation Modal */}
+            {showLogoutModal && (
+                <div
+                    onClick={() => setShowLogoutModal(false)}
+                    style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+                        paddingTop: '10vh', zIndex: 1000
+                    }}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            background: 'white', padding: '1.75rem', borderRadius: '12px',
+                            width: '380px', maxWidth: '90%',
+                            boxShadow: '0 10px 40px rgba(0,0,0,0.25)',
+                            animation: 'slideDown 0.2s ease-out'
+                        }}
+                    >
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '0.5rem', color: 'var(--text-main)' }}>Confirm Logout</h3>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.95rem' }}>
+                            Are you sure you want to logout? You will need to sign in again to access your account.
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                            <button
+                                onClick={() => setShowLogoutModal(false)}
+                                className="btn btn-outline"
+                                style={{ padding: '0.6rem 1.25rem', fontSize: '0.9rem' }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmLogout}
+                                className="btn"
+                                style={{ padding: '0.6rem 1.25rem', background: '#ef4444', color: 'white', fontSize: '0.9rem', border: 'none' }}
+                            >
+                                Yes, Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Navigation Bar */}
             <nav style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>

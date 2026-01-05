@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Bell, User, Send, Check, CheckCheck, ArrowLeft, Package } from 'lucide-react';
 import * as signalR from '@microsoft/signalr';
+import Toast from '../../components/Toast';
+import { useToast } from '../../hooks/useNotification';
 import '../../index.css';
 
 const ChatPage = () => {
@@ -36,6 +38,9 @@ const ChatPage = () => {
     const currentUserId = localStorage.getItem('userId');
     const token = localStorage.getItem('token');
 
+    // Custom notifications
+    const { toast, showSuccess, showError, hideToast } = useToast();
+
     // Scroll to bottom when messages change
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -53,7 +58,7 @@ const ChatPage = () => {
             try {
                 // Try new Chat API first
                 const response = await fetch('http://localhost:5081/api/chat/threads', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': `Bearer ${token} ` }
                 });
                 if (response.ok) {
                     const data = await response.json();
@@ -81,7 +86,7 @@ const ChatPage = () => {
             // Fallback: Fetch from Negotiations API
             try {
                 const response = await fetch('http://localhost:5081/api/Negotiation', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 'Authorization': `Bearer ${token} ` }
                 });
                 if (response.ok) {
                     const negotiations = await response.json();
@@ -135,7 +140,7 @@ const ChatPage = () => {
                     const response = await fetch('http://localhost:5081/api/chat/threads', {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${token}`,
+                            'Authorization': `Bearer ${token} `,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({ supplierId, productId, initialMessage: '' })
@@ -144,7 +149,7 @@ const ChatPage = () => {
                         const data = await response.json();
                         // Refresh threads and select the new one
                         const threadsResponse = await fetch('http://localhost:5081/api/chat/threads', {
-                            headers: { 'Authorization': `Bearer ${token}` }
+                            headers: { 'Authorization': `Bearer ${token} ` }
                         });
                         if (threadsResponse.ok) {
                             const threadsData = await threadsResponse.json();
@@ -339,7 +344,7 @@ const ChatPage = () => {
             if (!response.ok) {
                 // Remove optimistic message on failure
                 setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
-                alert('Failed to send message');
+                showError('Failed to send message');
             }
         } catch (error) {
             console.error('Failed to send message:', error);
@@ -364,7 +369,7 @@ const ChatPage = () => {
 
         if (!pricePerUnit || !quantity || !selectedThread) {
             console.error('Validation failed!');
-            alert('Please fill in all fields');
+            showError('Please fill in all fields');
             return;
         }
 
@@ -410,11 +415,11 @@ const ChatPage = () => {
                 const errorText = await response.text();
                 console.error('Failed to send counter offer. Status:', response.status);
                 console.error('Error response:', errorText);
-                alert(`Failed to send counter offer: ${errorText}`);
+                showError(`Failed to send counter offer: ${errorText}`);
             }
         } catch (error) {
             console.error('Error sending counter offer:', error);
-            alert(`Error sending counter offer: ${error.message}`);
+            showError(`Error sending counter offer: ${error.message}`);
         }
     };
 
@@ -446,21 +451,31 @@ const ChatPage = () => {
                 }, 100);
 
                 if (status === 'Accepted') {
-                    alert('Offer accepted! An order has been created.');
+                    showSuccess('Offer accepted! An order has been created.');
                 }
             } else {
                 const error = await response.text();
-                alert(`Failed to update status: ${error}`);
+                showError(`Failed to update status: ${error}`);
             }
         } catch (error) {
             console.error('Error updating status:', error);
-            alert('Error updating status');
+            showError('Error updating status');
         }
     };
 
 
     return (
         <div style={{ display: 'flex', height: '100vh', background: '#f0f2f5' }}>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={hideToast}
+                    duration={toast.duration}
+                />
+            )}
+
             {/* Sidebar - Thread List */}
             <div style={{
                 width: '350px',

@@ -2,10 +2,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/api';
 import { Bell, User, Search, Filter, ChevronDown, SlidersHorizontal, Star, MapPin, X, CheckCircle, ShoppingCart, Info, Truck, ShieldCheck } from 'lucide-react';
+import Toast from '../../components/Toast';
+import { useToast } from '../../hooks/useNotification';
 import '../../index.css';
 
 const SearchProducts = () => {
     const navigate = useNavigate();
+    const { toast, showSuccess, showError, hideToast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [showModal, setShowModal] = useState(false);
@@ -173,7 +176,7 @@ const SearchProducts = () => {
             navigate(`/buyer/orders/${userId}`);
         } catch (error) {
             console.error("Failed to create negotiation", error);
-            alert("Failed to create order: " + error.message);
+            showError("Failed to create order: " + error.message);
         }
     };
 
@@ -201,17 +204,27 @@ const SearchProducts = () => {
                 status: 'Negotiation'
             });
             console.log("Negotiation Created:", response);
-            alert(`Counter offer sent successfully! Your offer is being reviewed by the supplier.`);
+            showSuccess(`Counter offer sent successfully! Your offer is being reviewed by the supplier.`);
 
             setShowModal(false);
         } catch (error) {
             console.error("Failed to create negotiation", error);
-            alert("Failed to send counter offer: " + error.message);
+            showError("Failed to send counter offer: " + error.message);
         }
     };
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={hideToast}
+                    duration={toast.duration}
+                />
+            )}
+
             {/* Navigation Bar */}
             <nav style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>

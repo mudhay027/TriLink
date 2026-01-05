@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../../api/api';
-import { Bell, User, Search, Filter, ChevronDown, FileText, CheckCircle, Clock, AlertCircle, DollarSign, Package } from 'lucide-react';
+import { Bell, User, Package, Calendar, MapPin, FileText, DollarSign } from 'lucide-react';
+import Toast from '../../components/Toast';
+import { useToast } from '../../hooks/useNotification';
 import '../../index.css';
 
 const BuyerOrders = () => {
@@ -13,6 +15,9 @@ const BuyerOrders = () => {
     const [orderHistory, setOrderHistory] = useState([]);
     const [invoiceStatus, setInvoiceStatus] = useState({}); // Map of orderId -> invoice info
 
+    // Custom notifications
+    const { toast, showSuccess, showInfo, hideToast } = useToast();
+
     useEffect(() => {
         const fetchOrders = async () => {
             try {
@@ -23,8 +28,8 @@ const BuyerOrders = () => {
                         id: order.id,
                         supplier: order.sellerName || 'Unknown Supplier',
                         product: order.productName || 'Unknown Product',
-                        amount: `₹${order.totalPrice || order.finalPrice}`,
-                        quantity: `${order.quantity} ${order.unit}`,
+                        amount: `₹${order.totalPrice || order.finalPrice} `,
+                        quantity: `${order.quantity} ${order.unit} `,
                         date: new Date(order.createdAt).toLocaleDateString(),
                         status: order.status,
                         actionRequired: order.status === 'Confirmed',
@@ -37,7 +42,7 @@ const BuyerOrders = () => {
                     // Fetch rejected negotiations
                     const token = localStorage.getItem('token');
                     const negResponse = await fetch('http://localhost:5081/api/Negotiation', {
-                        headers: { 'Authorization': `Bearer ${token}` }
+                        headers: { 'Authorization': `Bearer ${token} ` }
                     });
 
                     let rejectedNegs = [];
@@ -118,6 +123,16 @@ const BuyerOrders = () => {
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={hideToast}
+                    duration={toast.duration}
+                />
+            )}
+
             {/* Navigation Bar */}
             <nav style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
@@ -220,7 +235,7 @@ const BuyerOrders = () => {
                                             <button
                                                 onClick={() => {
                                                     if (order.status.includes('Negotiation')) navigate('/buyer/negotiation');
-                                                    else alert('Redirecting to Payment Gateway...');
+                                                    else showInfo('Redirecting to Payment Gateway...');
                                                 }}
                                                 className="btn btn-primary"
                                                 style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
@@ -235,7 +250,7 @@ const BuyerOrders = () => {
                                                         const userId = localStorage.getItem('userId');
                                                         navigate(`/buyer/invoice-preview/${userId}/${invoiceInfo.invoiceId}`);
                                                     } else {
-                                                        alert('No invoice available for this order yet.');
+                                                        showInfo('No invoice available for this order yet.');
                                                     }
                                                 }}
                                                 style={{ background: 'white', border: '1px solid var(--border)', padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}

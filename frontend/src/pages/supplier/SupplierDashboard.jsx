@@ -1,24 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, User, Package, Handshake, ShoppingBag, Plus, Check, X } from 'lucide-react';
+import { Bell, User, Package, Handshake, ShoppingBag, Plus } from 'lucide-react';
+import Toast from '../../components/Toast';
+import { useToast } from '../../hooks/useNotification';
 import '../../index.css';
 
 const SupplierDashboard = () => {
     const navigate = useNavigate();
 
-    const [statsData, setStatsData] = React.useState({
+    // Custom notifications
+    const { toast, showError, hideToast } = useToast();
+
+    const [statsData, setStatsData] = useState({
         totalActiveProducts: 0,
         ongoingOrders: 0,
         completedOrders: 0
     });
 
-    const [recentOffers, setRecentOffers] = React.useState([]);
+    const [recentOffers, setRecentOffers] = useState([]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const fetchDashboardData = async () => {
             try {
                 const token = localStorage.getItem('token');
-                if (!token) return;
+                if (!token) {
+                    showError("Authentication token not found. Please log in.");
+                    return;
+                }
 
                 // Fetch Stats
                 const statsResponse = await fetch('/api/DashboardStats/supplier', {
@@ -30,14 +38,12 @@ const SupplierDashboard = () => {
                 }
 
                 // Fetch Recent Offers (Negotiations)
-                // Use the configured api wrapper if available, or fetch directly
-                const negResponse = await fetch('http://localhost:5081/api/Negotiation', { // Using direct URL or relative if proxy is set
+                const negResponse = await fetch('http://localhost:5081/api/Negotiation', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (negResponse.ok) {
                     const negotiationsData = await negResponse.json();
-                    // Filter for Pending offers
                     const pendingOffers = (negotiationsData || []).filter(n => n.status === 'Pending');
                     setRecentOffers(pendingOffers);
                 }
@@ -58,11 +64,21 @@ const SupplierDashboard = () => {
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={hideToast}
+                    duration={toast.duration}
+                />
+            )}
+
             {/* Navigation Bar */}
             <nav style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <img src="/trilink_logo.jpg" alt="TriLink" style={{ height: '36px' }} />
+                        <img src="/TriLinkIcon.png" alt="TriLink" style={{ height: '36px' }} />
                         <span style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</span>
                     </div>
                     <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>
@@ -144,12 +160,9 @@ const SupplierDashboard = () => {
                                             <td style={{ padding: '1.25rem 1.5rem', fontWeight: '500' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                                     <div style={{ width: '32px', height: '32px', background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: '600' }}>
-                                                        {offer.buyerName ? offer.buyerName.charAt(0).toUpperCase() : 'U'}
+                                                        {offer.buyerCompanyName ? offer.buyerCompanyName.charAt(0).toUpperCase() : (offer.buyerName ? offer.buyerName.charAt(0).toUpperCase() : 'U')}
                                                     </div>
-                                                    <div>
-                                                        <div style={{ fontWeight: '500' }}>{offer.buyerName}</div>
-                                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{offer.buyerCompanyName || 'Individual'}</div>
-                                                    </div>
+                                                    <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>{offer.buyerCompanyName || 'Individual Buyer'}</div>
                                                 </div>
                                             </td>
                                             <td style={{ padding: '1.25rem 1.5rem' }}>{offer.productName}</td>
@@ -159,9 +172,10 @@ const SupplierDashboard = () => {
                                                     : `₹${offer.currentOfferAmount}`}
                                             </td>
 
+
                                             <td style={{ padding: '1.25rem 1.5rem' }}>
-                                                {offer.buyerEmail}<br />
-                                                {offer.buyerContactNumber}
+                                                <div>{offer.buyerEmail || 'N/A'}</div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>{offer.buyerContactNumber || 'N/A'}</div>
                                             </td>
                                             <td style={{ padding: '1.25rem 1.5rem', textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
@@ -185,11 +199,11 @@ const SupplierDashboard = () => {
                                                                     navigate(`/supplier/orders/${userId}`);
                                                                 } else {
                                                                     console.error("Failed to accept offer");
-                                                                    alert("Failed to accept offer. Please try again.");
+                                                                    showError("Failed to accept offer. Please try again.");
                                                                 }
                                                             } catch (err) {
                                                                 console.error("Error accepting offer:", err);
-                                                                alert("Error accepting offer.");
+                                                                showError("Error accepting offer.");
                                                             }
                                                         }}
                                                         style={{ background: 'black', color: 'white', padding: '0.4rem 1rem', borderRadius: '6px', fontSize: '0.85rem' }}

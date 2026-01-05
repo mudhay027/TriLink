@@ -5,6 +5,8 @@ import { MapContainer, TileLayer, Polyline, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import polyline from '@mapbox/polyline';
 import L from 'leaflet';
+import Toast from '../../components/Toast';
+import { useToast } from '../../hooks/useNotification';
 import '../../index.css';
 
 // Fix for default marker icon
@@ -21,6 +23,11 @@ const RouteSummary = () => {
     const location = useLocation();
     const { jobData, suggestedRouteData } = location.state || {};
     const [showMapFullscreen, setShowMapFullscreen] = useState(false);
+    const [routes, setRoutes] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Custom notifications
+    const { toast, showError, hideToast } = useToast();
 
     // Debug: Log received data
     console.log('RouteSummary received suggestedRouteData:', suggestedRouteData);
@@ -31,7 +38,7 @@ const RouteSummary = () => {
             // Update job status in database
             const token = localStorage.getItem('token');
             const headers = token ? {
-                'Authorization': `Bearer ${token}`,
+                'Authorization': `Bearer ${token} `,
                 'Content-Type': 'application/json'
             } : { 'Content-Type': 'application/json' };
 
@@ -47,7 +54,7 @@ const RouteSummary = () => {
             navigate(`/logistics/dashboard/${userId}`);
         } catch (error) {
             console.error('Error accepting route:', error);
-            alert('Failed to accept route. Please try again.');
+            showError('Failed to accept route. Please try again.');
         }
     };
 
@@ -57,7 +64,7 @@ const RouteSummary = () => {
             <header style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }}>
-                        <img src="/trilink_logo.jpg" alt="TriLink" style={{ height: '36px' }} />
+                        <img src="/TriLinkIcon.png" alt="TriLink" style={{ height: '36px' }} />
                         <span style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</span>
                     </div>
                     <div style={{ display: 'flex', gap: '2rem', fontSize: '0.95rem', fontWeight: '500' }}>

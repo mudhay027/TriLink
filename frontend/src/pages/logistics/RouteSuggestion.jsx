@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Bell, User, MapPin, Clock, Truck, Zap, Map, CheckCircle, Maximize2, X } from 'lucide-react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Bell, User, Clock, Truck, Map, DollarSign, TrendingUp, Package } from 'lucide-react';
+import Toast from '../../components/Toast';
+import { useToast } from '../../hooks/useNotification';
 import { MapContainer, TileLayer, Polyline, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import polyline from '@mapbox/polyline';
@@ -19,8 +21,11 @@ L.Icon.Default.mergeOptions({
 const RouteSuggestion = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [showComparison, setShowComparison] = useState(false);
+    const [routes, setRoutes] = useState([]);
     const [selectedRoute, setSelectedRoute] = useState(null);
+
+    // Custom notifications
+    const { toast, showError, hideToast } = useToast();
     const [jobData, setJobData] = useState(null);
     const [suggestedRouteData, setSuggestedRouteData] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -158,7 +163,7 @@ const RouteSuggestion = () => {
             }
         } catch (error) {
             console.error("Failed to fetch route", error);
-            alert(`Failed to fetch route suggestions: ${error.message}`);
+            showError(`Failed to fetch route suggestions: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
@@ -212,7 +217,7 @@ const RouteSuggestion = () => {
             <header style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }} onClick={() => { const userId = localStorage.getItem('userId'); navigate(`/logistics/dashboard/${userId}`); }}>
-                        <img src="/trilink_logo.jpg" alt="TriLink" style={{ height: '36px' }} />
+                        <img src="/TriLinkIcon.png" alt="TriLink" style={{ height: '36px' }} />
                         <span style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-main)' }}>TriLink</span>
                     </div>
                 </div>

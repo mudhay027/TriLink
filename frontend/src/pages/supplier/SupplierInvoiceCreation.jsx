@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api/api';
 import { Bell, User, ArrowLeft, FileText, Calendar, DollarSign } from 'lucide-react';
+import Toast from '../../components/Toast';
+import ConfirmModal from '../../components/ConfirmModal';
+import { useToast, useConfirm } from '../../hooks/useNotification';
 import '../../index.css';
 
 const SupplierInvoiceCreation = () => {
@@ -10,6 +13,10 @@ const SupplierInvoiceCreation = () => {
     const [orderDetails, setOrderDetails] = useState(null);
     const [supplierInfo, setSupplierInfo] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Custom notifications
+    const { toast, showSuccess, showError, hideToast } = useToast();
+    const { confirmState, showConfirm, hideConfirm } = useConfirm();
 
     const [invoiceData, setInvoiceData] = useState({
         invoiceDate: new Date().toISOString().split('T')[0],
@@ -55,14 +62,14 @@ const SupplierInvoiceCreation = () => {
                             totalAmount: invoiceData.totalAmount
                         });
                     } else {
-                        alert('Failed to load invoice data');
+                        showError('Failed to load invoice data');
                         const userId = localStorage.getItem('userId');
                         navigate(`/supplier/orders/${userId}`);
                         return;
                     }
                 } catch (err) {
                     console.error('Failed to fetch invoice:', err);
-                    alert('Error loading invoice. Please return to orders page.');
+                    showError('Error loading invoice. Please return to orders page.');
                     const userId = localStorage.getItem('userId');
                     navigate(`/supplier/orders/${userId}`);
                     return;
@@ -71,7 +78,7 @@ const SupplierInvoiceCreation = () => {
 
             // Make sure we have an orderId before proceeding
             if (!fetchedOrderId) {
-                alert('Order ID not found. Please return to orders page.');
+                showError('Order ID not found. Please return to orders page.');
                 const userId = localStorage.getItem('userId');
                 navigate(`/supplier/orders/${userId}`);
                 return;
@@ -91,7 +98,7 @@ const SupplierInvoiceCreation = () => {
 
             if (!order) {
                 console.error('Order not found:', fetchedOrderId);
-                alert(`Order not found. Please return to orders page.`);
+                showError(`Order not found. Please return to orders page.`);
                 setLoading(false);
                 return;
             }
@@ -116,7 +123,7 @@ const SupplierInvoiceCreation = () => {
             setLoading(false);
         } catch (error) {
             console.error('Failed to fetch data:', error);
-            alert('Failed to load invoice data. Please try again.');
+            showError('Failed to load invoice data. Please try again.');
             setLoading(false);
         }
     };
@@ -175,97 +182,101 @@ const SupplierInvoiceCreation = () => {
             }
 
             if (response.ok) {
-                alert('Invoice saved as draft successfully!');
+                showSuccess('Invoice saved as draft successfully!');
                 const userId = localStorage.getItem('userId');
                 navigate(`/supplier/orders/${userId}`);
             } else {
                 const error = await response.json();
-                alert(`Failed to save invoice: ${error.message || 'Unknown error'}`);
+                showError(`Failed to save invoice: ${error.message || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Error saving invoice:', error);
-            alert('Error saving invoice. Please try again.');
+            showError('Error saving invoice. Please try again.');
         }
     };
 
     const handleFinalize = async () => {
-        try {
-            if (!confirm('Are you sure you want to finalize this invoice? Once finalized, it cannot be edited.')) {
-                return;
-            }
-
-            const token = localStorage.getItem('token');
-            let finalInvoiceId = invoiceId;
-
-            // If creating new invoice, check if one already exists first
-            if (!invoiceId) {
-                // Check if invoice already exists for this order
+        showConfirm({
+            title: 'Finalize Invoice',
+            message: 'Are you sure you want to finalize this invoice? Once finalized, it cannot be edited.',
+            confirmText: 'Yes, Finalize',
+            onConfirm: async () => {
                 try {
-                    const checkResponse = await fetch(`http://localhost:5081/api/invoice/order/${orderId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
 
-                    if (checkResponse.ok) {
-                        // Invoice already exists, use its ID
-                        const existingInvoice = await checkResponse.json();
-                        finalInvoiceId = existingInvoice.id;
-                        console.log('Using existing invoice:', finalInvoiceId);
-                    } else {
-                        // No invoice exists, create a new one
-                        const payload = {
-                            orderId: orderId,
-                            invoiceDate: invoiceData.invoiceDate,
-                            dueDate: invoiceData.dueDate,
-                            taxRate: invoiceData.taxRate,
-                            notes: invoiceData.notes
-                        };
+                    const token = localStorage.getItem('token');
+                    let finalInvoiceId = invoiceId;
 
-                        const createResponse = await fetch('http://localhost:5081/api/invoice', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(payload)
-                        });
+                    // If creating new invoice, check if one already exists first
+                    if (!invoiceId) {
+                        // Check if invoice already exists for this order
+                        try {
+                            const checkResponse = await fetch(`http://localhost:5081/api/invoice/order/${orderId}`, {
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
 
-                        if (!createResponse.ok) {
-                            const error = await createResponse.json();
-                            alert(`Failed to create invoice: ${error.message || 'Unknown error'}`);
+                            if (checkResponse.ok) {
+                                // Invoice already exists, use its ID
+                                const existingInvoice = await checkResponse.json();
+                                finalInvoiceId = existingInvoice.id;
+                                console.log('Using existing invoice:', finalInvoiceId);
+                            } else {
+                                // No invoice exists, create a new one
+                                const payload = {
+                                    orderId: orderId,
+                                    invoiceDate: invoiceData.invoiceDate,
+                                    dueDate: invoiceData.dueDate,
+                                    taxRate: invoiceData.taxRate,
+                                    notes: invoiceData.notes
+                                };
+
+                                const createResponse = await fetch('http://localhost:5081/api/invoice', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify(payload)
+                                });
+
+                                if (!createResponse.ok) {
+                                    const error = await createResponse.json();
+                                    showError(`Failed to create invoice: ${error.message || 'Unknown error'}`);
+                                    return;
+                                }
+
+                                const createdInvoice = await createResponse.json();
+                                finalInvoiceId = createdInvoice.id;
+                            }
+                        } catch (err) {
+                            console.error('Error checking/creating invoice:', err);
+                            showError('Error preparing invoice. Please try again.');
                             return;
                         }
-
-                        const createdInvoice = await createResponse.json();
-                        finalInvoiceId = createdInvoice.id;
                     }
-                } catch (err) {
-                    console.error('Error checking/creating invoice:', err);
-                    alert('Error preparing invoice. Please try again.');
-                    return;
+
+                    // Now finalize the invoice
+                    const finalizeResponse = await fetch(`http://localhost:5081/api/invoice/${finalInvoiceId}/finalize`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (finalizeResponse.ok) {
+                        showSuccess('Invoice finalized successfully!');
+                        const userId = localStorage.getItem('userId');
+                        navigate(`/supplier/orders/${userId}`);
+                    } else {
+                        const error = await finalizeResponse.json();
+                        showError(`Failed to finalize invoice: ${error.message || 'Unknown error'}`);
+                    }
+                } catch (error) {
+                    console.error('Error finalizing invoice:', error);
+                    showError('Error finalizing invoice. Please try again.');
                 }
             }
-
-            // Now finalize the invoice
-            const finalizeResponse = await fetch(`http://localhost:5081/api/invoice/${finalInvoiceId}/finalize`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (finalizeResponse.ok) {
-                alert('Invoice finalized successfully!');
-                const userId = localStorage.getItem('userId');
-                navigate(`/supplier/orders/${userId}`);
-            } else {
-                const error = await finalizeResponse.json();
-                alert(`Failed to finalize invoice: ${error.message || 'Unknown error'}`);
-            }
-        } catch (error) {
-            console.error('Error finalizing invoice:', error);
-            alert('Error finalizing invoice. Please try again.');
-        }
+        });
     };
 
     if (loading) {
@@ -278,6 +289,28 @@ const SupplierInvoiceCreation = () => {
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={hideToast}
+                    duration={toast.duration}
+                />
+            )}
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={hideConfirm}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                confirmText={confirmState.confirmText}
+                cancelText={confirmState.cancelText}
+                confirmColor={confirmState.confirmColor}
+            />
+
             {/* Navigation */}
             <nav style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>

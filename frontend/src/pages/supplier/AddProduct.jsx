@@ -22,6 +22,7 @@ const AddProduct = () => {
     });
 
     const [validationErrors, setValidationErrors] = useState({});
+    const [errorMessages, setErrorMessages] = useState([]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -42,6 +43,8 @@ const AddProduct = () => {
 
     const validate = () => {
         const errors = {};
+        const messages = [];
+
         if (!formData.productName.trim()) errors.productName = 'Product name is required';
         if (!formData.category) errors.category = 'Category is required';
         if (formData.category === 'Others' && !formData.customCategory.trim()) {
@@ -53,7 +56,18 @@ const AddProduct = () => {
         if (!formData.leadTime || formData.leadTime < 1) errors.leadTime = 'Lead time must be at least 1 day';
         if (!formData.location.trim()) errors.location = 'Location is required';
 
+        // File validation
+        if (!formData.images) {
+            errors.images = 'Product image is required';
+            messages.push('Product image is required');
+        }
+        if (!formData.documents) {
+            errors.documents = 'Product certificate is required';
+            messages.push('Product certificate/document is required');
+        }
+
         setValidationErrors(errors);
+        setErrorMessages(messages);
         return Object.keys(errors).length === 0;
     };
 
@@ -90,14 +104,28 @@ const AddProduct = () => {
             navigate(`/supplier/products/${userId}`, { state: { newProduct: true } });
         } catch (error) {
             console.error("Error submitting form:", error);
-            if (error.errors) {
-                const backendErrors = {};
-                Object.keys(error.errors).forEach(key => {
-                    backendErrors[key.toLowerCase()] = error.errors[key][0];
-                });
-                setValidationErrors(prev => ({ ...prev, ...backendErrors }));
+            const messages = [];
+
+            // Try to parse the error message
+            const errorMsg = error.message || error.toString();
+
+            // Check if it's a structured error with validation details
+            if (errorMsg.includes('Details:')) {
+                const parts = errorMsg.split('Details:');
+                if (parts.length > 1) {
+                    messages.push(parts[0].trim());
+                    const detailLines = parts[1].trim().split('\n').filter(line => line.trim());
+                    messages.push(...detailLines);
+                }
+            } else {
+                messages.push('An error occurred while saving the product');
+                if (errorMsg && errorMsg !== 'An error occurred while saving the product') {
+                    messages.push(errorMsg);
+                }
             }
-            alert('An error occurred while saving the product: ' + error.message);
+
+            setErrorMessages(messages);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     };
 
@@ -129,6 +157,18 @@ const AddProduct = () => {
                     <h1 style={{ fontSize: '2rem', fontWeight: '600', marginBottom: '0.5rem' }}>Add New Product</h1>
                     <p style={{ color: 'var(--text-muted)' }}>Fill in the details to list your product</p>
                 </div>
+
+                {/* Error Messages */}
+                {errorMessages.length > 0 && (
+                    <div style={{ background: '#fee2e2', border: '1px solid #ef4444', borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem' }}>
+                        <div style={{ color: '#b91c1c', fontSize: '1rem', fontWeight: '600', marginBottom: '0.75rem' }}>Please fix the following errors:</div>
+                        <ul style={{ color: '#dc2626', fontSize: '0.9rem', marginLeft: '1.5rem' }}>
+                            {errorMessages.map((msg, index) => (
+                                <li key={index} style={{ marginBottom: '0.25rem' }}>{msg}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem' }}>
 
@@ -314,11 +354,21 @@ const AddProduct = () => {
 
                         {/* Image Upload */}
                         <div className="card" style={{ padding: '2rem' }}>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1.5rem' }}>Product Images</h3>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1.5rem' }}>
+                                Product Images <span style={{ color: '#ef4444' }}>*</span>
+                            </h3>
                             <div style={{
-                                border: '2px dashed var(--border)', borderRadius: '12px', padding: '3rem 1rem',
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s'
+                                border: validationErrors.images ? '2px dashed #ef4444' : '2px dashed var(--border)',
+                                borderRadius: '12px',
+                                padding: '3rem 1rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                textAlign: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                background: validationErrors.images ? '#fef2f2' : 'transparent'
                             }}>
                                 <div style={{ width: '48px', height: '48px', background: '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
                                     <ImageIcon size={24} color="var(--text-main)" />
@@ -334,17 +384,28 @@ const AddProduct = () => {
                                         style={{ position: 'absolute', top: 0, left: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
                                     />
                                 </div>
-                                {formData.images && <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--accent)' }}>Selected: {formData.images.name}</p>}
+                                {formData.images && <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#10b981', fontWeight: '500' }}>✓ Selected: {formData.images.name}</p>}
+                                {validationErrors.images && <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#ef4444', fontWeight: '500' }}>⚠ {validationErrors.images}</p>}
                             </div>
                         </div>
 
                         {/* Document Upload */}
                         <div className="card" style={{ padding: '2rem' }}>
-                            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1.5rem' }}>Documents</h3>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: '600', marginBottom: '1.5rem' }}>
+                                Documents <span style={{ color: '#ef4444' }}>*</span>
+                            </h3>
                             <div style={{
-                                border: '2px dashed var(--border)', borderRadius: '12px', padding: '3rem 1rem',
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s'
+                                border: validationErrors.documents ? '2px dashed #ef4444' : '2px dashed var(--border)',
+                                borderRadius: '12px',
+                                padding: '3rem 1rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                textAlign: 'center',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                background: validationErrors.documents ? '#fef2f2' : 'transparent'
                             }}>
                                 <div style={{ width: '48px', height: '48px', background: '#f1f5f9', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
                                     <FileText size={24} color="var(--text-main)" />
@@ -360,7 +421,8 @@ const AddProduct = () => {
                                         style={{ position: 'absolute', top: 0, left: 0, opacity: 0, width: '100%', height: '100%', cursor: 'pointer' }}
                                     />
                                 </div>
-                                {formData.documents && <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--accent)' }}>Selected: {formData.documents.name}</p>}
+                                {formData.documents && <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#10b981', fontWeight: '500' }}>✓ Selected: {formData.documents.name}</p>}
+                                {validationErrors.documents && <p style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#ef4444', fontWeight: '500' }}>⚠ {validationErrors.documents}</p>}
                             </div>
                         </div>
 

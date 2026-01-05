@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Bell, User, ArrowLeft, Printer, Download } from 'lucide-react';
+import { Bell, User, ArrowLeft } from 'lucide-react';
+import Toast from '../../components/Toast';
+import { useToast } from '../../hooks/useNotification';
 import html2pdf from 'html2pdf.js';
 import '../../index.css';
 
@@ -9,6 +11,9 @@ const InvoicePreview = () => {
     const { invoiceId } = useParams();
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Custom notifications
+    const { toast, showError, hideToast } = useToast();
 
     useEffect(() => {
         if (invoiceId) {
@@ -27,14 +32,14 @@ const InvoicePreview = () => {
                 const data = await response.json();
                 setInvoice(data);
             } else {
-                alert('Failed to load invoice');
+                showError('Failed to load invoice');
                 const userId = localStorage.getItem('userId');
                 navigate(`/buyer/orders/${userId}`);
             }
             setLoading(false);
         } catch (error) {
             console.error('Error fetching invoice:', error);
-            alert('Error loading invoice');
+            showError('Error loading invoice');
             setLoading(false);
         }
     };
@@ -65,6 +70,16 @@ const InvoicePreview = () => {
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={hideToast}
+                    duration={toast.duration}
+                />
+            )}
+
             {/* Navigation Bar */}
             <nav style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>

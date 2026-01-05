@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, User, Edit2, Save, X, LogOut, FileText, Download, ArrowLeft } from 'lucide-react';
+import Toast from '../../components/Toast';
+import ConfirmModal from '../../components/ConfirmModal';
+import { useToast, useConfirm } from '../../hooks/useNotification';
 import '../../index.css';
 
 const BuyerProfile = () => {
@@ -8,6 +11,10 @@ const BuyerProfile = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+
+    // Custom notifications
+    const { toast, showError, hideToast } = useToast();
+    const { confirmState, showConfirm, hideConfirm } = useConfirm();
 
     // Profile state
     const [profile, setProfile] = useState({
@@ -97,7 +104,7 @@ const BuyerProfile = () => {
     const handleSave = async () => {
         // Validate Contact Person
         if (profile.contactPerson && !/^[A-Za-z\s]+$/.test(profile.contactPerson)) {
-            alert('Contact person name must contain only alphabets');
+            showError('Contact person name must contain only alphabets');
             return;
         }
 
@@ -125,15 +132,20 @@ const BuyerProfile = () => {
             // Optionally show success message
         } catch (err) {
             console.error(err);
-            alert('Failed to save changes');
+            showError('Failed to save changes');
         }
     };
 
     const handleLogout = () => {
-        if (confirm('Are you sure you want to logout?')) {
-            localStorage.clear();
-            navigate('/');
-        }
+        showConfirm({
+            title: 'Confirm Logout',
+            message: 'Are you sure you want to logout? You will need to sign in again to access your account.',
+            confirmText: 'Yes, Logout',
+            onConfirm: () => {
+                localStorage.clear();
+                navigate('/');
+            }
+        });
     };
 
     const handleDownload = (url, filename) => {
@@ -145,6 +157,28 @@ const BuyerProfile = () => {
 
     return (
         <div className="fade-in" style={{ minHeight: '100vh', background: '#f8fafc' }}>
+            {/* Toast Notification */}
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={hideToast}
+                    duration={toast.duration}
+                />
+            )}
+
+            {/* Confirm Modal */}
+            <ConfirmModal
+                isOpen={confirmState.isOpen}
+                onClose={hideConfirm}
+                onConfirm={confirmState.onConfirm}
+                title={confirmState.title}
+                message={confirmState.message}
+                confirmText={confirmState.confirmText}
+                cancelText={confirmState.cancelText}
+                confirmColor={confirmState.confirmColor}
+            />
+
             {/* Navigation Bar */}
             <nav style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '1rem 3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '3rem' }}>

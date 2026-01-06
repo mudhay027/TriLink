@@ -6,7 +6,7 @@ namespace Backend.Services
     public interface IGoogleMapsService
     {
         Task<(double lat, double lon)?> GeocodeAsync(string address);
-        Task<(double distanceKm, double durationHours, string? encodedPolyline)?> GetDirectionsAsync(double originLat, double originLon, double destLat, double destLon);
+        Task<(double distanceKm, double durationHours, string? geometry)?> GetDirectionsAsync(double originLat, double originLon, double destLat, double destLon);
     }
 
     public class GoogleMapsService : IGoogleMapsService
@@ -64,7 +64,7 @@ namespace Backend.Services
         /// <summary>
         /// Gets directions between two coordinates using Google Directions API
         /// </summary>
-        public async Task<(double distanceKm, double durationHours, string? encodedPolyline)?> GetDirectionsAsync(
+        public async Task<(double distanceKm, double durationHours, string? geometry)?> GetDirectionsAsync(
             double originLat, double originLon, double destLat, double destLon)
         {
             try

@@ -270,9 +270,13 @@ const RouteSuggestion = () => {
                         <h3 style={{ fontSize: '1.1rem', fontWeight: '600' }}>
                             {showComparison ? 'Finalize Routes' : 'Route Planning'}
                         </h3>
-                        {!showComparison && (
+                        {!showComparison ? (
                             <button onClick={handleSuggest} disabled={isLoading} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#0f172a', color: 'white', opacity: isLoading ? 0.7 : 1 }}>
                                 <Zap size={16} /> {isLoading ? 'Generating...' : 'Suggest Route'}
+                            </button>
+                        ) : (
+                            <button onClick={handleSuggest} disabled={isLoading} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#64748b', color: 'white', opacity: isLoading ? 0.7 : 1, fontSize: '0.875rem', padding: '0.5rem 1rem' }}>
+                                <Zap size={14} /> {isLoading ? 'Recalculating...' : 'Recalculate Route'}
                             </button>
                         )}
 

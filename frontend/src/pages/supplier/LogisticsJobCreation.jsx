@@ -12,6 +12,9 @@ const SupplierLogisticsJobCreation = () => {
     // Custom notifications
     const { toast, showSuccess, showWarning, hideToast } = useToast();
 
+    // Validation errors
+    const [validationErrors, setValidationErrors] = useState({});
+
     // Comprehensive Form Data
     const [formData, setFormData] = useState({
         // Pickup Details
@@ -79,8 +82,24 @@ const SupplierLogisticsJobCreation = () => {
         return '0';
     };
 
+    const validateForm = () => {
+        const errors = {};
+
+        // Weight validation
+        if (!formData.totalWeight || formData.totalWeight <= 0) {
+            errors.totalWeight = 'Total weight must be greater than 0';
+        }
+        if (formData.totalWeight > 60000) {
+            errors.totalWeight = 'Maximum weight per job is 60,000 kg (60 tons). For heavier loads, create multiple jobs.';
+        }
+
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validateForm()) return;
         try {
             const token = localStorage.getItem('token');
 
@@ -355,9 +374,44 @@ const SupplierLogisticsJobCreation = () => {
                                         <label className="input-label">Pallet Count *</label>
                                         <input type="number" name="palletCount" className="input-field" required value={formData.palletCount} onChange={handleInputChange} min="1" />
                                     </div>
-                                    <div className="input-group">
+                                    <div className="input-group" style={{ position: 'relative' }}>
                                         <label className="input-label">Total Weight (kg) *</label>
                                         <input type="number" step="0.01" name="totalWeight" className="input-field" required value={formData.totalWeight} onChange={handleInputChange} />
+                                        {validationErrors.totalWeight && (
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '100%',
+                                                left: '50%',
+                                                transform: 'translateX(-50%)',
+                                                marginTop: '0.5rem',
+                                                background: '#ff9800',
+                                                color: 'white',
+                                                padding: '0.5rem 1rem',
+                                                borderRadius: '6px',
+                                                fontSize: '0.875rem',
+                                                fontWeight: '500',
+                                                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                                                zIndex: 10,
+                                                whiteSpace: 'nowrap',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem'
+                                            }}>
+                                                <span style={{
+                                                    background: 'white',
+                                                    color: '#ff9800',
+                                                    borderRadius: '50%',
+                                                    width: '20px',
+                                                    height: '20px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    fontWeight: 'bold',
+                                                    fontSize: '0.75rem'
+                                                }}>!</span>
+                                                {validationErrors.totalWeight}
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="input-group">
                                         <label className="input-label">Material Type *</label>

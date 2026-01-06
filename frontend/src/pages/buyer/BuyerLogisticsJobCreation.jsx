@@ -94,6 +94,7 @@ const BuyerLogisticsJobCreation = () => {
         // Pallet
         if (!formData.palletCount || formData.palletCount < 1) errors.palletCount = 'Pallet count must be at least 1';
         if (!formData.totalWeight || formData.totalWeight <= 0) errors.totalWeight = 'Total weight must be greater than 0';
+        if (formData.totalWeight > 60000) errors.totalWeight = 'Maximum weight per job is 60,000 kg (60 tons). For heavier loads, create multiple jobs.';
 
         // Documentation
         if (!formData.ewayBillNumber.trim()) errors.ewayBillNumber = 'E-Way bill number is required';

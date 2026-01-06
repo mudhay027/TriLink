@@ -8,13 +8,20 @@ namespace Backend.Controllers
     [Route("api/[controller]")]
     public class LogisticsController : ControllerBase
     {
-        private readonly IRouteService _routeService;
+        private readonly IGoogleMapsService _googleMapsService;
+        private readonly IRouteService _routeService; // Keep as fallback
         private readonly IAIService _aiService;
         private readonly ITransportCostService _costService;
         private readonly ILogger<LogisticsController> _logger;
 
-        public LogisticsController(IRouteService routeService, IAIService aiService, ITransportCostService costService, ILogger<LogisticsController> logger)
+        public LogisticsController(
+            IGoogleMapsService googleMapsService,
+            IRouteService routeService,
+            IAIService aiService, 
+            ITransportCostService costService, 
+            ILogger<LogisticsController> logger)
         {
+            _googleMapsService = googleMapsService;
             _routeService = routeService;
             _aiService = aiService;
             _costService = costService;
@@ -29,26 +36,46 @@ namespace Backend.Controllers
                 return BadRequest("Origin and Destination are required.");
             }
 
-            _logger.LogInformation($"Getting route for {request.Origin} to {request.Destination}");
+            _logger.LogInformation($"Getting route for {request.Origin} to {request.Destination} using Google Maps API");
 
-            // 1. Geocode Origin and Destination (with fallback)
-            var originCoords = await _routeService.GeocodeAsync(request.Origin, request.OriginCity);
-            var destCoords = await _routeService.GeocodeAsync(request.Destination, request.DestinationCity);
+            // 1. Geocode Origin and Destination using Google Maps (with OSRM fallback)
+            var originCoords = await _googleMapsService.GeocodeAsync(request.Origin);
+            if (originCoords == null)
+            {
+                _logger.LogWarning("Google Maps geocoding failed for origin, trying OSRM fallback");
+                originCoords = await _routeService.GeocodeAsync(request.Origin, request.OriginCity);
+            }
+
+            var destCoords = await _googleMapsService.GeocodeAsync(request.Destination);
+            if (destCoords == null)
+            {
+                _logger.LogWarning("Google Maps geocoding failed for destination, trying OSRM fallback");
+                destCoords = await _routeService.GeocodeAsync(request.Destination, request.DestinationCity);
+            }
 
             if (originCoords == null || destCoords == null)
             {
                 return NotFound("Could not find coordinates for one or both locations.");
             }
 
-            // 2. Get Route from OSRM
-            var route = await _routeService.GetRouteAsync(
+            // 2. Get Route from Google Maps Directions API (with OSRM fallback)
+            var route = await _googleMapsService.GetDirectionsAsync(
                 originCoords.Value.lat, originCoords.Value.lon,
                 destCoords.Value.lat, destCoords.Value.lon);
 
             if (route == null)
             {
+                _logger.LogWarning("Google Maps directions failed, trying OSRM fallback");
+                route = await _routeService.GetRouteAsync(
+                    originCoords.Value.lat, originCoords.Value.lon,
+                    destCoords.Value.lat, destCoords.Value.lon);
+            }
+
+            if (route == null)
+            {
                 return StatusCode(500, "Could not calculate route.");
             }
+
 
             // 3. Calculate Transport Costs using physics-based model
             var breakdown = _costService.CalculateCost(
